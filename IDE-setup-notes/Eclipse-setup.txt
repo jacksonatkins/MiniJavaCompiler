@@ -1,0 +1,136 @@
+Instructions for setting up MiniJava in Eclipse
+Hal Perkins, 10/2011, 1/2015, 1/2016, 9/2018. AJ, 9/2019, HP 4/20, 4/21.
+
+The recommended IDE for developing on MiniJava is currently JetBrains
+IntelliJ, as students have had more consistent success setting up using
+that. However, if you would like to try using Eclipse, these
+instructions will walk you through importing the MiniJava starter code
+in the IDE. Although these steps have been verified to work with most
+setups and Eclipse versions, things can change and it is possible you
+will find problems along the way.  Please report any issues you discover
+to cse401-staff@cs.washington.edu so the course staff can update these
+instructions for future quarters.  The course discussion group is also a
+good place to exchange experiences and ideas with others.
+
+Eclipse knows how to work with projects that include an ant buildfile,
+but for some reason it is a bit tricky to set up a minijava project
+correctly in Eclipse, partially because some of the Java source files
+don't exist until CUP and JFlex have created them for the first time.
+If you follow these instructions carefully, basic editing functionality
+should work and you shouldn't have to fiddle with classpath settings
+or perform other mysterious rituals.
+
+Before getting started, we highly recommend downloading the latest
+available version of Eclipse.
+
+0. Clone your project team's GitLab repository into some convenient
+location.  Initially it will contain the starter code for the project,
+which you will modify and add to during the quarter.
+
+1. BEFORE you start eclipse, open a command window, navigate to the
+root folder of your cloned repository, and enter 'ant' (without the
+quotes).  This should build the sample scanner and parser and compile
+all of the Java files.  If this step doesn't work, fix it before
+continuing.
+
+If you do not have ant on your system, you may be able to install it
+with whatever package manager is available locally.  Or you can go to
+https://ant.apache.org/ and get it from there.
+
+2. Start Eclipse and create a new project for MiniJava EXACTLY as
+follows.
+
+0) WAIT: did you do the ant build in step 1, above?  If not, quit
+eclipse RIGHT NOW and do that first.
+
+a) Select New>Project... (_not_ New>Java project) from the File>New menu.
+
+b) Select "Java Project from Existing Ant Buildfile" in the New
+Project window and click next (you may have to expand "Java" to find
+this option).
+
+c) In the New Java Project from Ant Buildfile window that appears,
+click Browse... next to the Ant buildfile box.  Navigate to your
+MiniJava project folder, select the build.xml file in it, and click
+Open.  (Or type the full path name of the build.xml file into the box
+if you wish).  This should autopopulate the name "minijava".  In the
+dialog that asks you to "Select javac declaration to use to define
+project", make sure the default option ("compile [default]") is
+selected.
+
+d) _Before_ closing the New Java Project from Ant Buildfile window,
+_be sure_ to select the "link to buildfile in the file system"
+checkbox towards the bottom.  This tells Eclipse to use the existing
+build.xml file and not make its own local copy.  You really, really
+want to use the single build.xml file instead of having multiple
+copies that can get out of sync as you change things.
+
+e) Click finish.  You should see the minijava project in the Eclipse
+Package Explorer window.  There will be various warnings about casts
+and other issues in the Java code for the parser and scanner that you
+can ignore.  If you have actual errors (red flags) something went
+wrong when you created the project.  Be sure you followed the
+instructions exactly.
+
+4. In this step, we will let Eclipse know about the other subfolders in the
+MiniJava project and reconfigure the windows slightly to make it easier
+to navigate the project and available ant tasks.
+
+a) In the Eclipse Package Explorer, right click on
+the top-level project (called "minijava" by default) and select
+"Import".  In the selection dialog, expand "General" and select "File
+System".
+
+b) On the next screen, in the "From directory" field, browse to the
+root folder of your compiler project (the one containing build.xml)
+and select it.  This should populate the dialog with the root folder
+on the left and standalone files on the right.  Click the dropdown
+next to the root folder to show the subfolders.  NOTE: Some people have
+reported that no dropdown appears for them.  In that case, try
+restarting or updating your version of Eclipse.  If you are still
+unable to get it to appear, you can skip steps 4(c) and 4(d).  You will
+still be able to use Eclipse for almost all development -- but you may
+have to use a different editor to write test files.
+
+c) Select the folders and files you would like to have access to
+from within Eclipse (except for those that have already been loaded,
+which are src/ and build.xml).  We recommend selecting the following
+folders: build/, Feedback/, IDE-setup-notes/, lib/, Notes/,
+SamplePrograms/, and test/.
+
+d) _Before_ clicking Finish, expand "Advanced" at the bottom and
+select "Create links in workspace".  This will ensure that changes
+you make in Eclipse are reflected in your git repository.
+
+e) In the Eclipse toolbar, select "Window" > "Show View" > "Project
+Explorer".  This is very similar to the Package Explorer (open by
+default), but will show the entire project instead of just the src/
+directory.
+
+f) Again in the Eclipse toolbar, select "Window" > "Show View" > "Ant".
+Then, drag "build.xml" from the Project Explorer into the newly opened
+Ant window to populate it with shortcuts to all the relevant ant targets.
+Note: you may need to deselect the "Hide Internal Targets" to get the
+other targets besides "compile" to show up.
+
+5. Once you've created the project and opened the Ant window, you can
+select the various targets to run the code. If you'd just like to test
+that your code compiles, select "compile" (the default task). If you'd
+like to run the Scanner demo, select "demo-scanner" and you should see
+output in the Eclipse console. As you add your own ant targets, they
+should appear here.
+
+6. If you feel compelled to start tinkering with classpaths or other
+Eclipse options, please post a message to the class discussion board
+describing the apparent problem and what you did to fix it.  That will
+help all of us figure out how to get Eclipse's internal build
+machinery to play nice with the project.
+
+
+One last (general) suggestion: If it seems that changes to your source
+files are not properly reflected in your project, it may be that some
+.class files are out of date and weren't recompiled when they should
+have been.  (Shouldn't be possible, but it seems to happen
+occasionally.)  If you suspect this to be the case, quit Eclipse if it
+is running, open a command window, navigate to the MiniJava folder,
+then enter 'ant clean' followed by 'ant' to recompile everything.

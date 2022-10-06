@@ -1,0 +1,72 @@
+/**
+ * CUP specification of the language grammar for a simple demo language.
+ * Change this into the language grammar of MiniJava for your implementation.
+ *
+ * CSE 401/M501/P501 19au, 20sp
+ */
+
+package Parser;
+
+import AST.*;
+import java.util.*;
+import java_cup.runtime.*;
+
+/* Terminals (lexical tokens returned by the scanner): */
+
+/* reserved words */
+terminal DISPLAY;
+
+/* operators */
+terminal PLUS, BECOMES;
+
+/* delimiters */
+terminal LPAREN, RPAREN, SEMICOLON;
+
+/* identifiers */
+terminal String IDENTIFIER;
+
+
+/* Nonterminals (constructed by parser): */
+
+nonterminal List<Statement> Program;
+nonterminal Statement Statement;
+nonterminal Assign AssignStatement;
+nonterminal Display DisplayStatement;
+nonterminal Exp Expression;
+nonterminal Identifier Identifier;
+
+
+/* Precedence declarations: */
+
+precedence left PLUS;
+
+
+/* Productions: */
+
+Program ::= Statement:s
+            {: List<Statement> p = new LinkedList<Statement>();
+               p.add(s);
+               RESULT = p; :}
+        | Program:p Statement:s
+            {: p.add(s); RESULT = p; :};
+
+Statement   ::= AssignStatement:s
+                {: RESULT = s; :}
+            | DisplayStatement:s
+                {: RESULT = s; :};
+
+AssignStatement ::= Identifier:id BECOMES Expression:expr SEMICOLON
+                    {: RESULT = new Assign(id, expr, idxleft); :};
+
+Identifier  ::= IDENTIFIER:id
+                {: RESULT = new Identifier(id, idxleft); :};
+
+DisplayStatement ::= DISPLAY:d Expression:expr SEMICOLON
+                     {: RESULT = new Display(expr, dxleft); :};
+
+Expression    ::= IDENTIFIER:name
+            {: RESULT = new IdentifierExp(name, namexleft); :}
+        | Expression:arg1 PLUS Expression:arg2
+            {: RESULT = new Plus(arg1, arg2, arg1xleft); :}
+        | LPAREN Expression:expr RPAREN
+            {: RESULT = expr; :};

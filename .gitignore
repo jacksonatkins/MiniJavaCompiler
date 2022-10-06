@@ -1,0 +1,35 @@
+# .gitignore for cse401 projects
+# (Probably best not to put much of anything here except for obvious things)
+
+# Compiler output:
+*.class
+*.o
+*.so
+*.a
+
+# JFlex/CUP generated files
+src/Parser/parser.java
+src/Parser/sym.java
+src/Scanner/scanner.java
+
+# Gradle and ant build files:
+.gradle/*
+build/
+
+# IDE files:
+# Emacs
+*~
+# Vim
+*.swp
+# VS Code
+.vscode/
+# JetBrains IntelliJ IDEA
+.idea/
+out/
+*.iml
+
+# OS X finder info files:
+.DS_Store
+
+# Dump files:
+*.hprof
