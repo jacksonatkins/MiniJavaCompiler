@@ -12,26 +12,30 @@ public class MiniJava {
             ComplexSymbolFactory sf = new ComplexSymbolFactory();
             int flag = 0;
             if (args.length > 0) { // TODO: Maybe change compiler flag?
+                String option = "";
                 File f;
                 if (args.length > 1) {
+                    option = args[0];
                     f = new File(args[1]);
                 } else {
                     f = new File(args[0]);
                 }
-                Reader in = new FileReader(f);
-                scanner s = new scanner(in, sf);
-                Symbol t = s.next_token();
-                while (t.sym != sym.EOF) {
-                    // print token
-                    if (t.sym == sym.error) {
-                        System.err.print(s.symbolToString(t) + " ");
-                        flag = 1;
-                    } else {
-                        System.out.print(s.symbolToString(t) + " ");
+                if (option.equals("") || option.equals("-S")) {
+                    Reader in = new FileReader(f);
+                    scanner s = new scanner(in, sf);
+                    Symbol t = s.next_token();
+                    while (t.sym != sym.EOF) {
+                        // print token
+                        if (t.sym == sym.error) {
+                            System.err.print(s.symbolToString(t) + " ");
+                            flag = 1;
+                        } else {
+                            System.out.print(s.symbolToString(t) + " ");
+                        }
+                        t = s.next_token();
                     }
-                    t = s.next_token();
+                    System.exit(flag);
                 }
-                System.exit(flag);
             } else {
               System.err.println("No File Passed");
               System.exit(1);
