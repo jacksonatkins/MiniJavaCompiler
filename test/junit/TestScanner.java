@@ -58,5 +58,11 @@ public class TestScanner {
     public void testComments() { runScannerTestCase("Comments"); }
 
     @Test
-    public void testError () { runScannerTestCase("Error"); }
+    public void testError() { runScannerTestCase("Error"); }
+
+    @Test
+    public void testGeneral() { runScannerTestCase("General"); }
+
+    @Test
+    public void testBoolean() { runScannerTestCase("Boolean"); }
 }

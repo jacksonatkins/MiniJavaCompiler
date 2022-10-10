@@ -17,7 +17,7 @@ import java_cup.runtime.*;
 terminal DISPLAY;
 
 /* operators */
-terminal PLUS, BECOMES, AND, LESS, MINUS, MULT, NOT;
+terminal PLUS, BECOMES, AND, LESS, MINUS, MULT, NOT, PRINT;
 
 /* delimiters */
 terminal LPAREN, RPAREN, SEMICOLON, LBRACKET, RBRACKET, LBRACE, RBRACE, DOT, COMMA;
@@ -30,7 +30,8 @@ terminal BOOL;
 terminal INT;
 
 /* declarations */
-terminal PUBLIC, STATIC, VOID, MAIN, LENGTH, NEW;
+terminal PUBLIC, STATIC, VOID, MAIN, LENGTH, NEW, EXTENDS, STRING, THIS;
+terminal TRUE, FALSE, CLASS, RETURN;
 
 /* conditionals */
 terminal IF, ELSE, WHILE;

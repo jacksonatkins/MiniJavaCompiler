@@ -120,7 +120,9 @@ comment = [//]
 
 /* types */
 "int" { return symbol(sym.INT); }
-"boolean" { return symbol(sym.BOOL); } // CHECK THESE
+"boolean" { return symbol(sym.BOOL); }
+"true" { return symbol(sym.TRUE); }
+"false" { return symbol(sym.FALSE); }
 
 /* operators */
 "+" { return symbol(sym.PLUS); }
@@ -130,6 +132,7 @@ comment = [//]
 "-" { return symbol(sym.MINUS); }
 "*" { return symbol(sym.MULT); }
 "!" { return symbol(sym.NOT); }
+"System.out.println" { return symbol(sym.PRINT); }
 
 /* delimiters */
 "(" { return symbol(sym.LPAREN); }
@@ -149,6 +152,11 @@ comment = [//]
 "main" { return symbol(sym.MAIN); }
 "length" { return symbol(sym.LENGTH); }
 "new" { return symbol(sym.NEW); }
+"extends" { return symbol(sym.EXTENDS); }
+"String" { return symbol(sym.STRING); }
+"this" { return symbol(sym.THIS); }
+"return" { return symbol(sym.RETURN); }
+"class" { return symbol(sym.CLASS); }
 
 /* conditionals */
 "if" { return symbol(sym.IF); }

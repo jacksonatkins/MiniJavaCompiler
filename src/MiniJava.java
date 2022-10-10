@@ -7,14 +7,17 @@ import java_cup.runtime.ComplexSymbolFactory;
 public class MiniJava {
 
     public static void main(String[] args) {
-        /*
-         Types: int, boolean, int[], reference types
-         If, while , assignment
-         */
+
         try {
             ComplexSymbolFactory sf = new ComplexSymbolFactory();
-            if (args.length > 0) {
-                File f = new File(args[0]); // Do I need to add a catch or sum here?
+            int flag = 0;
+            if (args.length > 0) { // TODO: Maybe change compiler flag?
+                File f;
+                if (args.length > 1) {
+                    f = new File(args[1]);
+                } else {
+                    f = new File(args[0]);
+                }
                 Reader in = new FileReader(f);
                 scanner s = new scanner(in, sf);
                 Symbol t = s.next_token();
@@ -22,20 +25,21 @@ public class MiniJava {
                     // print token
                     if (t.sym == sym.error) {
                         System.err.print(s.symbolToString(t) + " ");
+                        flag = 1;
                     } else {
                         System.out.print(s.symbolToString(t) + " ");
                     }
                     t = s.next_token();
                 }
-                System.exit(0);
+                System.exit(flag);
             } else {
               System.err.println("No File Passed");
               System.exit(1);
             }
-        } catch (Exception e) { // Maybe change to something more specific later?
-             System.err.println("Oops");
+        } catch (Exception e) {
+             System.err.println("Error found. Printing stack trace.");
              e.printStackTrace();
-             System.exit(1); // Exit code 1 for error?
+             System.exit(1);
         }
     }
 
