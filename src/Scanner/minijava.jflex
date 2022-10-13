@@ -114,9 +114,6 @@ white = {eol}|[ \t]
 
 /* Token definitions */
 
-/* reserved words (first so that they take precedence over identifiers) */
-"display" { return symbol(sym.DISPLAY); }
-
 /* types */
 "int" { return symbol(sym.INT); }
 "boolean" { return symbol(sym.BOOL); }
@@ -174,7 +171,7 @@ white = {eol}|[ \t]
 
 /* comments */
 "//"(.)* { /* ignore comments */ }
-"/*"[^/]*"*/" { /* ignore multiline comments */ }
+"/*"([^*]|([*]+[^*/]))*[*]+"/" { /* ignore multiline comments */ }
 
 /* whitespace */
 {white}+ { /* ignore whitespace */ }
