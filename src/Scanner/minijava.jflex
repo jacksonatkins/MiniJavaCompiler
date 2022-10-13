@@ -109,7 +109,6 @@ letter = [a-zA-Z]
 digit = [0-9]
 eol = [\r\n]
 white = {eol}|[ \t]
-comment = [//]
 
 %%
 
@@ -174,7 +173,8 @@ comment = [//]
 }
 
 /* comments */
-{comment} (.)* { /* ignore comments */ }
+"//"(.)* { /* ignore comments */ }
+"/*"[^/]*"*/" { /* ignore multiline comments */ }
 
 /* whitespace */
 {white}+ { /* ignore whitespace */ }

@@ -65,4 +65,13 @@ public class TestScanner {
 
     @Test
     public void testBoolean() { runScannerTestCase("Boolean"); }
+
+    @Test
+    public void testLeadingZero() { runScannerTestCase("LeadingZero"); }
+
+    @Test
+    public void testUnderscore() { runScannerTestCase("Underscore"); }
+
+    @Test
+    public void testMultilineComment() { runScannerTestCase("MultilineComment"); }
 }

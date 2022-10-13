@@ -27,17 +27,18 @@ public class MiniJava {
                     while (t.sym != sym.EOF) {
                         // print token
                         if (t.sym == sym.error) {
-                            System.err.print(s.symbolToString(t) + " ");
                             flag = 1;
-                        } else {
-                            System.out.print(s.symbolToString(t) + " ");
                         }
+                        System.out.print(s.symbolToString(t) + " ");
                         t = s.next_token();
                     }
                     System.exit(flag);
+                } else {
+                    System.err.println("Unknown Flag Passed.");
+                    System.exit(1);
                 }
             } else {
-              System.err.println("No File Passed");
+              System.err.println("No File Passed.");
               System.exit(1);
             }
         } catch (Exception e) {
