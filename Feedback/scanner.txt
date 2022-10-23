@@ -1,0 +1,5 @@
+CSE 401/501 22au Project I - Scanner
+
+Integer literals should not begin with 0, except 0 itself (e.g. instead of INTLIT(0) INTLIT(123) returns INTLIT(0123)). (-1)
+
+Total: 39/40
