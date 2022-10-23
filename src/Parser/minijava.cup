@@ -14,7 +14,6 @@ import java_cup.runtime.*;
 /* Terminals (lexical tokens returned by the scanner): */
 
 /* reserved words */
-terminal DISPLAY;
 
 /* operators */
 terminal PLUS, BECOMES, AND, LESS, MINUS, MULT, NOT, PRINT;
@@ -37,49 +36,224 @@ terminal TRUE, FALSE, CLASS, RETURN;
 terminal IF, ELSE, WHILE;
 
 /* literal */
-terminal Integer DIGIT;
+terminal String DIGIT;  // No idea why, but having this as an integer caused a problem.
 
 /* Nonterminals (constructed by parser): */
+nonterminal Program Program;
+nonterminal MainClass MainClass;
+nonterminal ClassDeclList ClassDeclList;
+nonterminal ClassDecl ClassDecl;
+nonterminal ClassDeclSimple ClassDeclSimple;
+nonterminal ClassDeclExtends ClassDeclExtends;
 
-nonterminal List<Statement> Program;
 nonterminal Statement Statement;
 nonterminal Assign AssignStatement;
-nonterminal Display DisplayStatement;
 nonterminal Exp Expression;
+nonterminal ExpList ExpList;
 nonterminal Identifier Identifier;
-
+nonterminal Type Type;
+nonterminal Formal Formal;
+nonterminal VarDecl VarDeclaration;
+nonterminal MethodDecl MethodDeclaration;
+nonterminal ArrayAssign ArrayAssignStatement;
+nonterminal Print PrintStatement;
+nonterminal If IfStatement;
+nonterminal Block BlockStatement;
+nonterminal While WhileStatement;
+nonterminal VarDeclList VarDeclList;
+nonterminal StatementList StatementList;
+nonterminal MethodDeclList MethodDeclList;
+nonterminal FormalList FormalList;
 
 /* Precedence declarations: */
 
-precedence left PLUS;
-
+precedence left PLUS, MINUS, NOT;
+precedence left MULT;
+precedence left LESS;
+precedence left AND;
 
 /* Productions: */
 
-Program ::= Statement:s
-            {: List<Statement> p = new LinkedList<Statement>();
-               p.add(s);
-               RESULT = p; :}
-        | Program:p Statement:s
-            {: p.add(s); RESULT = p; :};
+Program ::= MainClass:mc ClassDeclList:cdl
+                {: RESULT = new Program(mc, cdl, mcxleft); :}
+          | MainClass:mc
+                {: ClassDeclList cdl = new ClassDeclList(mcxleft);
+                   RESULT = new Program(mc, cdl, mcxleft); :};
 
-Statement   ::= AssignStatement:s
+MainClass ::= CLASS:c Identifier:className LBRACE PUBLIC STATIC VOID MAIN LPAREN STRING LBRACKET RBRACKET Identifier:argsName RPAREN LBRACE Statement:s RBRACE RBRACE
+                {: RESULT = new MainClass(className, argsName, s, cxleft); :};
+
+ClassDeclList ::= ClassDecl:cd
+                    {: ClassDeclList cdl = new ClassDeclList(cdxleft);
+                       cdl.add(cd);
+                       RESULT = cdl; :}
+                | ClassDeclList:cdl ClassDecl:cd
+                    {: cdl.add(cd);
+                       RESULT = cdl; :};
+
+// Renamed from ClassDeclaration to ClassDecl; is there a reason you didn't use the abbreviation on this production but did on the others?
+ClassDecl ::= ClassDeclSimple:cds
+                {: RESULT = cds; :}
+            | ClassDeclExtends:cde
+                {: RESULT = cde; :};
+
+ClassDeclSimple ::= CLASS:c Identifier:className LBRACE VarDeclList:vdl MethodDeclList:mdl RBRACE
+                        {: RESULT = new ClassDeclSimple(className, vdl, mdl, cxleft); :}
+                  | CLASS:c Identifier:className LBRACE VarDeclList:vdl RBRACE
+                        {: MethodDeclList mdl = new MethodDeclList(vdlxleft);
+                           RESULT = new ClassDeclSimple(className, vdl, mdl, cxleft); :}
+                  | CLASS:c Identifier:className LBRACE MethodDeclList:mdl RBRACE
+                        {: VarDeclList vdl = new VarDeclList(mdlxleft);
+                           RESULT = new ClassDeclSimple(className, vdl, mdl, cxleft); :}
+                  | CLASS:c Identifier:className LBRACE RBRACE
+                        {: VarDeclList vdl = new VarDeclList(classNamexleft);
+                           MethodDeclList mdl = new MethodDeclList(classNamexleft);
+                           RESULT = new ClassDeclSimple(className, vdl, mdl, cxleft); :};
+
+ClassDeclExtends ::= CLASS:c Identifier:className EXTENDS Identifier:extendedName LBRACE VarDeclList:vdl MethodDeclList:mdl RBRACE
+                        {: RESULT = new ClassDeclExtends(className, extendedName, vdl, mdl, cxleft); :}
+                  | CLASS:c Identifier:className EXTENDS Identifier:extendedName LBRACE VarDeclList:vdl RBRACE
+                        {: MethodDeclList mdl = new MethodDeclList(vdlxleft);
+                           RESULT = new ClassDeclExtends(className, extendedName, vdl, mdl, cxleft); :}
+                  | CLASS:c Identifier:className EXTENDS Identifier:extendedName LBRACE MethodDeclList:mdl RBRACE
+                        {: VarDeclList vdl = new VarDeclList(mdlxleft);
+                           RESULT = new ClassDeclExtends(className, extendedName, vdl, mdl, cxleft); :}
+                  | CLASS:c Identifier:className EXTENDS Identifier:extendedName LBRACE RBRACE
+                        {: VarDeclList vdl = new VarDeclList(extendedNamexleft);
+                           MethodDeclList mdl = new MethodDeclList(extendedNamexleft);
+                           RESULT = new ClassDeclExtends(className, extendedName, vdl, mdl, cxleft); :};
+
+VarDeclaration ::= Type:t Identifier:id SEMICOLON
+            {: RESULT = new VarDecl(t, id, txleft); :};
+
+VarDeclList ::= VarDeclaration:vd
+                    {: VarDeclList vdl = new VarDeclList(vdxleft);
+                       vdl.add(vd);
+                       RESULT = vdl; :}
+              | VarDeclList:vdl VarDeclaration:vd
+                    {: vdl.add(vd);
+                       RESULT = vdl; :};
+
+MethodDeclaration ::= PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPAREN LBRACE VarDeclList:vdl StatementList:sl
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :};
+
+MethodDeclList ::= MethodDeclaration:md
+                    {: MethodDeclList mdl = new MethodDeclList(mdxleft);
+                       mdl.add(md);
+                       RESULT = mdl; :}
+                 | MethodDeclList:mdl MethodDeclaration:md
+                    {: mdl.add(md);
+                       RESULT = mdl; :};
+
+Formal ::= Type:t Identifier:name
+            {: RESULT = new Formal(t, name, txleft); :};
+
+FormalList ::= Formal:f
+                {: FormalList fl = new FormalList(fxleft);
+                   fl.add(f);
+                   RESULT = fl; :}
+             | FormalList:fl COMMA Formal:f
+                {: fl.add(f);
+                   RESULT = fl; :};
+
+Type    ::= INT:i LBRACKET RBRACKET
+            {: RESULT = new IntArrayType(ixleft); :}
+        | BOOL:b
+            {: RESULT = new BooleanType(bxleft); :}
+        | INT:i
+            {: RESULT = new IntegerType(ixleft); :}
+        | Identifier:id
+            {: RESULT = new IdentifierType(id.s, idxleft);  :};
+
+Statement   ::= BlockStatement:s
                 {: RESULT = s; :}
-            | DisplayStatement:s
+            | IfStatement:s
+                {: RESULT = s; :}
+            | WhileStatement:s
+                {: RESULT = s; :}
+            | PrintStatement:s
+                {: RESULT = s; :}
+            | AssignStatement:s
+                {: RESULT = s; :}
+            | ArrayAssignStatement:s
                 {: RESULT = s; :};
+
+StatementList ::= Statement:s
+                    {: StatementList sl = new StatementList(sxleft);
+                       sl.add(s);
+                       RESULT = sl; :}
+                | StatementList:sl Statement:s
+                    {: sl.add(s);
+                       RESULT = sl; :};
+
+BlockStatement ::= LBRACE:lb StatementList:sl RBRACE
+                    {: RESULT = new Block(sl, slxleft); :}
+                 | LBRACE:lb RBRACE
+                    {: StatementList sl = new StatementList(lbxleft);  // This seems somewhat hacky, but I couldn't find any other way to get it to compile.
+                       RESULT = new Block(sl, lbxleft); :};
+
+IfStatement     ::= IF:i LPAREN Expression:expr RPAREN Statement:s1 ELSE Statement:s2
+                    {: RESULT = new If(expr, s1, s2, ixleft); :};
+
+WhileStatement  ::= WHILE:w LPAREN Expression:expr RPAREN Statement:s
+                    {: RESULT = new While(expr, s, wxleft); :};
+
+PrintStatement ::= PRINT:p LPAREN Expression:expr RPAREN SEMICOLON
+                   {: RESULT = new Print(expr, pxleft); :};
 
 AssignStatement ::= Identifier:id BECOMES Expression:expr SEMICOLON
                     {: RESULT = new Assign(id, expr, idxleft); :};
 
-Identifier  ::= IDENTIFIER:id
-                {: RESULT = new Identifier(id, idxleft); :};
+ArrayAssignStatement ::= Identifier:id LBRACKET Expression:expr1 RBRACKET BECOMES Expression:expr2 SEMICOLON
+                    {: RESULT = new ArrayAssign(id, expr1, expr2, idxleft); :};
 
-DisplayStatement ::= DISPLAY:d Expression:expr SEMICOLON
-                     {: RESULT = new Display(expr, dxleft); :};
+ExpList ::= Expression:e
+                {: ExpList el = new ExpList(exleft);
+                   el.add(e);
+                   RESULT = el; :}
+          | ExpList:el COMMA Expression:e
+                {: el.add(e);
+                   RESULT = el; :};
 
-Expression    ::= IDENTIFIER:name
-            {: RESULT = new IdentifierExp(name, namexleft); :}
+Expression    ::= Expression:arg1 AND Expression:arg2
+                    {: RESULT = new And(arg1, arg2, arg1xleft); :}
+        | Expression:arg1 LESS Expression:arg2
+            {: RESULT = new LessThan(arg1, arg2, arg1xleft); :}
         | Expression:arg1 PLUS Expression:arg2
             {: RESULT = new Plus(arg1, arg2, arg1xleft); :}
+        | Expression:arg1 MINUS Expression:arg2
+            {: RESULT = new Minus(arg1, arg2, arg1xleft); :}
+        | Expression:arg1 MULT Expression:arg2
+            {: RESULT = new Times(arg1, arg2, arg1xleft); :}
+        | Expression:arg1 LBRACKET Expression:arg2 RBRACKET
+            {: RESULT = new ArrayLookup(arg1, arg2, arg1xleft); :}
+        | Expression:arg1 DOT LENGTH
+            {: RESULT = new ArrayLength(arg1, arg1xleft); :}
+        | Expression:arg1 DOT Identifier:id LPAREN ExpList:el RPAREN
+            {: RESULT = new Call(arg1, id, el, arg1xleft); :}
+        | Expression:arg1 DOT Identifier:id LPAREN RPAREN
+            {: ExpList el = new ExpList(idxleft);
+               RESULT = new Call(arg1, id, el, arg1xleft); :}  // Needed to deal with the case that there's no arguments to the method.
+        | DIGIT:d
+            {: RESULT = new IntegerLiteral(Integer.parseInt(d), dxleft); :}
+        | TRUE:t
+            {: RESULT = new True(txleft); :}
+        | FALSE:f
+            {: RESULT = new False(fxleft); :}
+        | IDENTIFIER:name
+            {: RESULT = new IdentifierExp(name, namexleft); :}
+        | THIS:th
+            {: RESULT = new This(thxleft); :}
+        | NEW:n INT LBRACKET Expression:arg1 RBRACKET
+            {: RESULT = new NewArray(arg1, nxleft); :}
+        | NEW:n Identifier:id LPAREN RPAREN
+            {: RESULT = new NewObject(id, nxleft); :}
+        | NOT:n Expression:arg1
+            {: RESULT = new Not(arg1, nxleft); :}
         | LPAREN Expression:expr RPAREN
             {: RESULT = expr; :};
+
+Identifier  ::= IDENTIFIER:id
+            {: RESULT = new Identifier(id, idxleft); :};
+
