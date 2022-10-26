@@ -1,0 +1,14 @@
+Program
+  MainClass A
+    Print
+      new B().And()
+  Class B
+    MethodDecl And
+      returns boolean
+      boolean a
+      boolean b
+      boolean c
+      a = false
+      b = true
+      c = (a && b)
+      Return c

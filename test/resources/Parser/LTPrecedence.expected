@@ -1,0 +1,17 @@
+Program
+  MainClass A
+    Print
+      new B().LT()
+  Class B
+    MethodDecl LT
+      returns int
+      int a
+      int b
+      int c
+      a = 4
+      b = 5
+      if (a < b)
+        c = a
+      else
+        c = b
+      Return c

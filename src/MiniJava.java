@@ -1,6 +1,7 @@
 import AST.Program;
 import AST.Statement;
 import AST.Visitor.PrettyPrintVisitor;
+import AST.Visitor.UglyPrintVisitor;
 import Parser.*;
 import Scanner.*;
 import java.io.*;
@@ -22,8 +23,8 @@ public class MiniJava {
             System.exit(1);
         }
 
-        String path = new String();
-        Set flags = EnumSet.noneOf(Flag.class);
+        String path = "";
+        Set<Flag> flags = EnumSet.noneOf(Flag.class);
 
         try {
             for (String arg : args) {
@@ -76,62 +77,25 @@ public class MiniJava {
                 System.err.println("Error occurred during scanning, exiting...");
                 System.exit(1);
             }
+            if (flags.contains(Flag.A) || flags.contains(Flag.P)) {
+                parser p = new parser(s, sf);
+                Symbol root;
+                root = p.parse();
+                Program program = (Program) root.value;
 
-            parser p = new parser(s, sf);
-            Symbol root;
-            root = p.parse();
-            Program program = (Program) root.value;
-
-            if (flags.contains(Flag.A)) {
-                System.out.println("Not yet implemented! :(");
-            } else if (flags.contains(Flag.P)) {
-                program.accept(new PrettyPrintVisitor());
-                System.out.print("\n");
+                if (flags.contains(Flag.A)) {
+                    program.accept(new UglyPrintVisitor());
+                    System.out.println("\n");
+                } else if (flags.contains(Flag.P)) {
+                    program.accept(new PrettyPrintVisitor());
+                    System.out.print("\n");
+                }
             }
         } catch (Exception e) {
             System.err.println("Unexpected internal compiler error: " +
-                    e.toString());
+                    e);
             e.printStackTrace();
             System.exit(1);
         }
-
-        /*try {
-            ComplexSymbolFactory sf = new ComplexSymbolFactory();
-            int flag = 0;
-            if (args.length > 0) { // TODO: Maybe change compiler flag?
-                String option = "";
-                File f;
-                if (args.length > 1) {
-                    option = args[0];
-                    f = new File(args[1]);
-                } else {
-                    f = new File(args[0]);
-                }
-                if (option.equals("") || option.equals("-S")) {
-                    Reader in = new FileReader(f);
-                    scanner s = new scanner(in, sf);
-                    Symbol t = s.next_token();
-                    while (t.sym != sym.EOF) {
-                        // print token
-                        if (t.sym == sym.error) {
-                            flag = 1;
-                        }
-                        System.out.print(s.symbolToString(t) + " ");
-                        t = s.next_token();
-                    }
-                    System.exit(flag);
-                } else {
-                    System.err.println("Unknown Flag Passed.");
-                    System.exit(1);
-                }
-            } else {
-              System.err.println("No File Passed.");
-              System.exit(1);
-            }
-        } catch (Exception e) {
-             System.err.println("Error found. Printing stack trace.");
-             e.printStackTrace();
-             System.exit(1);
-        }*/
     }
 }

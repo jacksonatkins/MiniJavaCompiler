@@ -67,10 +67,14 @@ nonterminal FormalList FormalList;
 
 /* Precedence declarations: */
 
+precedence right BECOMES; // is this right?
+precedence left AND;
+precedence left LESS;
 precedence left PLUS, MINUS, NOT;
 precedence left MULT;
-precedence left LESS;
-precedence left AND;
+precedence left DOT;
+
+// Do I have to add stuff like array access?
 
 /* Productions: */
 
@@ -136,7 +140,35 @@ VarDeclList ::= VarDeclaration:vd
 
 MethodDeclaration ::= PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPAREN LBRACE VarDeclList:vdl StatementList:sl
                         RETURN Expression:expr SEMICOLON RBRACE
-                      {: RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :};
+                      {: RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN:lp RPAREN LBRACE VarDeclList:vdl StatementList:sl
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: FormalList fl = new FormalList(lpxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPAREN LBRACE:lb StatementList:sl
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: VarDeclList vdl = new VarDeclList(lbxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN:l RPAREN LBRACE:lb StatementList:sl
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: FormalList fl = new FormalList(lxleft);
+                         VarDeclList vdl = new VarDeclList(lbxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN:l RPAREN LBRACE:lb
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: FormalList fl = new FormalList(lxleft);
+                         VarDeclList vdl = new VarDeclList(lbxleft);
+                         StatementList sl = new StatementList(lbxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN:l RPAREN LBRACE VarDeclList:vdl
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: FormalList fl = new FormalList(lxleft);
+                         StatementList sl = new StatementList(vdlxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPAREN LBRACE VarDeclList:vdl
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: StatementList sl = new StatementList(vdlxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :};
 
 MethodDeclList ::= MethodDeclaration:md
                     {: MethodDeclList mdl = new MethodDeclList(mdxleft);

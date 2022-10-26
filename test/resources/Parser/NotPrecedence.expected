@@ -1,0 +1,11 @@
+Program
+  MainClass A
+    Print
+      new B().Not()
+  Class B
+    MethodDecl Not
+      returns boolean
+      boolean a
+      a = false
+      c = !a
+      Return c

@@ -1,0 +1,14 @@
+Program
+  MainClass A
+    Print
+      new B().Func(5)
+  Class B
+    MethodDecl Func
+      returns Foo
+      parameters:
+        int q
+      Foo a
+      Foo b
+      Foo c
+      c = (a + b.Bar())
+      Return c
