@@ -36,7 +36,7 @@ terminal TRUE, FALSE, CLASS, RETURN;
 terminal IF, ELSE, WHILE;
 
 /* literal */
-terminal String DIGIT;  // No idea why, but having this as an integer caused a problem.
+terminal String DIGIT;
 
 /* Nonterminals (constructed by parser): */
 nonterminal Program Program;
@@ -67,14 +67,14 @@ nonterminal FormalList FormalList;
 
 /* Precedence declarations: */
 
-precedence right BECOMES; // is this right?
+precedence nonassoc BECOMES;
 precedence left AND;
 precedence left LESS;
-precedence left PLUS, MINUS, NOT;
+precedence left PLUS, MINUS;
 precedence left MULT;
-precedence left DOT;
-
-// Do I have to add stuff like array access?
+precedence right NEW;
+precedence right NOT;
+precedence left DOT, LBRACKET;
 
 /* Productions: */
 
@@ -95,7 +95,6 @@ ClassDeclList ::= ClassDecl:cd
                     {: cdl.add(cd);
                        RESULT = cdl; :};
 
-// Renamed from ClassDeclaration to ClassDecl; is there a reason you didn't use the abbreviation on this production but did on the others?
 ClassDecl ::= ClassDeclSimple:cds
                 {: RESULT = cds; :}
             | ClassDeclExtends:cde
@@ -222,7 +221,7 @@ StatementList ::= Statement:s
 BlockStatement ::= LBRACE:lb StatementList:sl RBRACE
                     {: RESULT = new Block(sl, slxleft); :}
                  | LBRACE:lb RBRACE
-                    {: StatementList sl = new StatementList(lbxleft);  // This seems somewhat hacky, but I couldn't find any other way to get it to compile.
+                    {: StatementList sl = new StatementList(lbxleft);
                        RESULT = new Block(sl, lbxleft); :};
 
 IfStatement     ::= IF:i LPAREN Expression:expr RPAREN Statement:s1 ELSE Statement:s2
@@ -266,7 +265,7 @@ Expression    ::= Expression:arg1 AND Expression:arg2
             {: RESULT = new Call(arg1, id, el, arg1xleft); :}
         | Expression:arg1 DOT Identifier:id LPAREN RPAREN
             {: ExpList el = new ExpList(idxleft);
-               RESULT = new Call(arg1, id, el, arg1xleft); :}  // Needed to deal with the case that there's no arguments to the method.
+               RESULT = new Call(arg1, id, el, arg1xleft); :}
         | DIGIT:d
             {: RESULT = new IntegerLiteral(Integer.parseInt(d), dxleft); :}
         | TRUE:t
