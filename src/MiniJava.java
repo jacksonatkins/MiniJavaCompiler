@@ -78,19 +78,31 @@ public class MiniJava {
                 System.exit(1);
             }
             if (flags.contains(Flag.A) || flags.contains(Flag.P)) {
+                // If the user passes S and A/P, we reset the scanner to allow the tokens to be printed and pass the
+                // tokens to the parser
+                if (flags.contains(Flag.S)) {
+                    f = new File(path);
+                    in = new FileReader(f);
+                    sf = new ComplexSymbolFactory();
+                    s = new scanner(in, sf);
+                }
+
                 parser p = new parser(s, sf);
                 Symbol root;
                 root = p.parse();
                 Program program = (Program) root.value;
 
+                // Allows user to pass both parsing flags to see both trees
                 if (flags.contains(Flag.A)) {
                     program.accept(new UglyPrintVisitor());
                     System.out.println("\n");
-                } else if (flags.contains(Flag.P)) {
+                }
+                if (flags.contains(Flag.P)) {
                     program.accept(new PrettyPrintVisitor());
                     System.out.print("\n");
                 }
             }
+            System.exit(0);
         } catch (Exception e) {
             System.err.println("Unexpected internal compiler error: " +
                     e);

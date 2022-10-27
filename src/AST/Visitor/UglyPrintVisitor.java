@@ -23,6 +23,9 @@ public class UglyPrintVisitor implements Visitor{
         n.m.accept(this);
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
+            if (i + 1 < n.cl.size()) {
+                System.out.println();
+            }
         }
     }
 
@@ -158,6 +161,10 @@ public class UglyPrintVisitor implements Visitor{
     public void visit(Block n) {
         for (int i = 0; i < n.sl.size(); i++) {
             n.sl.get(i).accept(this);
+            if (i + 1 < n.sl.size()) {
+                System.out.println();
+                printIndent(indentLevel);
+            }
         }
         //System.out.println();
     }
