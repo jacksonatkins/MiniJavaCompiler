@@ -18,7 +18,7 @@ import org.junit.After;
 
 public class TestParser {
 
-    public static final String TEST_FILES_LOCATION = "../test/resources/Parser/";
+    public static final String TEST_FILES_LOCATION = "test/resources/Parser/";
     public static final String TEST_FILES_INPUT_EXTENSION = ".java";
     public static final String TEST_FILES_EXPECTED_EXTENSION = ".expected";
 

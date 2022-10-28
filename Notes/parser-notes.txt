@@ -1,0 +1,4 @@
+We made no major changes to the grammar. The only thing we did was use the extra nonterminals described by the AST
+starter code, such as ClassDeclList, MethodDeclList, and StatementList.
+
+There are no shift-reduce conflicts in our grammar.
