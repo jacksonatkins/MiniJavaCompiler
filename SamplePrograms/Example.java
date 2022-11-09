@@ -8,15 +8,25 @@ class Foo {
     }
 }
 
-class Bar extends Nothing {
+class Bar{
+    //Bruh v;
+    //int q;
     public int bar(Baz f, Bar b) {
-        Object a;
-        Object b;
-        Object c;
-        a = new Object();
-        b = new Object();
-        c = a+b.f();
-        System.out.println(new Thing().method());
-        return 5;
+        int a;
+        int c;
+        int d;
+        boolean one;
+        boolean two;
+        one = true;
+        two = false;
+
+        a = 4;
+        d = 5;
+        if (one && a) {
+            c = 6 + a;
+        } else {
+            c = 5 + a;
+        }
+        return a;
     }
 }

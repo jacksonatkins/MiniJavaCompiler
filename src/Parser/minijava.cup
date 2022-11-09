@@ -167,6 +167,11 @@ MethodDeclaration ::= PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPARE
                      | PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPAREN LBRACE VarDeclList:vdl
                         RETURN Expression:expr SEMICOLON RBRACE
                       {: StatementList sl = new StatementList(vdlxleft);
+                         RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :}
+                     | PUBLIC:p Type:t Identifier:name LPAREN FormalList:fl RPAREN LBRACE: lb
+                        RETURN Expression:expr SEMICOLON RBRACE
+                      {: VarDeclList vdl = new VarDeclList(lbxleft);
+                         StatementList sl = new StatementList(lbxleft);
                          RESULT = new MethodDecl(t, name, fl, vdl, sl, expr, pxleft); :};
 
 MethodDeclList ::= MethodDeclaration:md
