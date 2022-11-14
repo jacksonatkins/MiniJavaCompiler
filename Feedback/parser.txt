@@ -1,0 +1,7 @@
+CSE 401/501 22au Project II - Parser
+
+The tree-formatted output (from "-A") does not display method calls within array indexes in a reasonable way. (eg. a[foo.bar()]). (-1)
+
+The tree-formatted output (from "-A") should get line numbers from the AST nodes just like pretty print. (-2)
+
+Total: 57/60
