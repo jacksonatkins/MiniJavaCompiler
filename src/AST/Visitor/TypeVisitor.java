@@ -194,7 +194,7 @@ public class TypeVisitor implements Visitor {
         if (n.t instanceof IdentifierType) {
             current.idType = ((IdentifierType)n.t).s;
         }
-
+        this.currentMethod.getParameterTypes().add(current);
         this.currentMethod.getParameters().put(n.i.s, current);
     }
 

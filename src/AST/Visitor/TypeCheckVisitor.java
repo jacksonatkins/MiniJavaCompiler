@@ -7,12 +7,14 @@ import java.util.*;
 public class TypeCheckVisitor implements Visitor{
 
     private HashMap<String, ClassNode> globalTable;
+
     private TypeVisitor t;
 
     private Node currentNode;
     private Node parentNode;
     private NodeType currentType;
     private Map<String, Node> currentScope;
+    private Map<String, List<String>> dependencyGraph;
 
     public void visit(Display n) {
 
@@ -23,6 +25,7 @@ public class TypeCheckVisitor implements Visitor{
         n.accept(t);
         globalTable = t.symbolTable();
         this.currentScope = new HashMap<>();
+        this.dependencyGraph = new HashMap<>();
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
         }
@@ -38,23 +41,64 @@ public class TypeCheckVisitor implements Visitor{
             System.err.println("(Line " + n.line_number + ") Class " + n.i.s + " not defined.");
         }
 
+        // Add all fields from current class to the current scope
+        this.currentScope.putAll(((ClassNode)this.currentNode).getFields());
+
+        // Accept all var declarations?
         for (int i = 0; i < n.vl.size(); i++) {
-            this.currentScope.put(n.vl.get(i).i.s, ((ClassNode)this.currentNode).getFields().get(n.vl.get(i).i.s));
             n.vl.get(i).accept(this);
         }
 
+        // Traverse through all methods
         this.parentNode = this.currentNode;
         for (int i = 0; i < n.ml.size(); i++) {
             n.ml.get(i).accept(this);
         }
 
+        // Reset after we are done with this class
         this.parentNode = null;
         this.currentNode = null;
-        this.currentScope = new HashMap<>();
+        this.currentScope = new HashMap<>(); // Likely incorrect.
+    }
+
+    public boolean inheritanceCycle() {
+
+        return false;
     }
 
     public void visit(ClassDeclExtends n) {
+        if (!this.dependencyGraph.containsKey(n.i.s)) {
+            this.dependencyGraph.put(n.i.s, new ArrayList<>());
+        }
+        this.dependencyGraph.get(n.i.s).add(n.j.s);
 
+        if (inheritanceCycle()) {
+
+        }
+
+        this.currentNode = globalTable.get(n.i.s);
+        if (currentNode == null) {
+            System.err.println("(Line " + n.line_number + ") Class " + n.i.s + " not defined.");
+        }
+
+        // Add all fields from current class to the current scope
+        this.currentScope.putAll(((ClassNode)this.currentNode).getFields());
+
+        // Accept all var declarations?
+        for (int i = 0; i < n.vl.size(); i++) {
+            n.vl.get(i).accept(this);
+        }
+
+        // Traverse through all methods
+        this.parentNode = this.currentNode;
+        for (int i = 0; i < n.ml.size(); i++) {
+            n.ml.get(i).accept(this);
+        }
+
+        // Reset after we are done with this class
+        this.parentNode = null;
+        this.currentNode = null;
+        this.currentScope = new HashMap<>(); // Likely incorrect.
     }
 
     public void visit(VarDecl n) {
@@ -151,12 +195,9 @@ public class TypeCheckVisitor implements Visitor{
             return;
         }
         n.e.accept(this);
-        if (left.getType().equals(NodeType.INTEGER) && !this.currentType.equals(NodeType.INTEGER)) {
-            System.err.println("(Line " + n.line_number + ") Cannot assign integer variable to non-integer value.");
-            return;
-        }
-        if (!left.getType().equals(NodeType.INTEGER) && this.currentType.equals(NodeType.INTEGER)) {
-            System.err.println("(Line " + n.line_number + ") Cannot assign integer value to non-integer variable.");
+        if (!left.getType().equals(this.currentType)) {
+            System.err.println("(Line " + n.line_number + ") Cannot assign variable of type " + left.getType() +
+                    " to variable of type " + this.currentType);
             return;
         }
         this.currentType = left.getType();
@@ -167,24 +208,20 @@ public class TypeCheckVisitor implements Visitor{
     }
 
     public void visit(And n) {
-         booleanLogic(n.e1, n.e2, n.line_number);
+         n.e1.accept(this);
+         NodeType left = this.currentType;
+         n.e2.accept(this);
+         NodeType right = this.currentType;
+         if (!left.equals(NodeType.BOOLEAN) || !right.equals(NodeType.BOOLEAN)) {
+             System.err.println("(Line " + n.line_number + ") Cannot compare non-boolean variables.");
+             this.currentType = NodeType.UNKNOWN;
+             return;
+         }
+         this.currentType = NodeType.BOOLEAN;
     }
 
     public void visit(LessThan n) {
         math(n.e1, n.e2, "compare", n.line_number);
-    }
-
-    public void booleanLogic(Exp e1, Exp e2, int num) {
-        e1.accept(this);
-        NodeType left = this.currentType;
-        e2.accept(this);
-        NodeType right = this.currentType;
-        if (!left.equals(NodeType.BOOLEAN) || !right.equals(NodeType.BOOLEAN)) {
-            System.err.println("(Line " + num + ") Cannot compare non-boolean variables.");
-            this.currentType = NodeType.UNKNOWN;
-            return;
-        }
-        this.currentType = NodeType.BOOLEAN;
     }
 
     public void math(Exp e1, Exp e2, String name, int num) {
@@ -226,7 +263,10 @@ public class TypeCheckVisitor implements Visitor{
     }
 
     public void visit(Call n) {
-
+        // Exp e
+        // ID i (name of method)
+        // ExpList el (parameters for the thing)
+        n.e.accept(this); // Gets IDENTIFIER from b????
     }
 
     public void visit(IntegerLiteral n) {
@@ -255,7 +295,13 @@ public class TypeCheckVisitor implements Visitor{
     }
 
     public void visit(NewArray n) {
-
+        n.e.accept(this);
+        if (!this.currentType.equals(NodeType.INTEGER)) {
+            System.err.println("(Line " + n.line_number + ") Cannot use non-integer value to declare array.");
+            this.currentType = NodeType.UNKNOWN;
+            return;
+        }
+        this.currentType = NodeType.ARRAY;
     }
 
     public void visit(NewObject n) {
@@ -275,7 +321,6 @@ public class TypeCheckVisitor implements Visitor{
     public void visit(Identifier n) {
         this.currentType = this.currentScope.get(n.s).getType();
     }
-
 
     public NodeType getType(Type t) {
         if (t instanceof BooleanType) {
