@@ -33,6 +33,7 @@ public class UglyPrintVisitor implements Visitor{
         printIndent(indentLevel);
         System.out.print("MainClass ");
         n.i1.accept(this);
+        System.out.print(" (line " + n.line_number + ")");
         System.out.println();
         indentLevel += 1;
         printIndent(indentLevel);
@@ -45,17 +46,19 @@ public class UglyPrintVisitor implements Visitor{
         printIndent(indentLevel);
         System.out.print("Class ");
         n.i.accept(this);
+        System.out.print(" (line " + n.line_number + ")");
         indentLevel += 1;
         for (int i = 0; i < n.vl.size(); i++) {
             System.out.println();
             printIndent(indentLevel);
             n.vl.get(i).accept(this);
+            System.out.print(" (line " + n.vl.get(i).line_number + ")");
         }
         for (int i = 0; i < n.ml.size(); i++) {
             System.out.println();
             n.ml.get(i).accept(this);
         }
-        //System.out.println();
+        indentLevel -= 1;
     }
 
     public void visit(ClassDeclExtends n) {
@@ -64,18 +67,19 @@ public class UglyPrintVisitor implements Visitor{
         n.i.accept(this);
         System.out.print(" extends ");
         n.j.accept(this);
+        System.out.print(" (line " + n.line_number + ")");
         indentLevel += 1;
         for (int i = 0; i < n.vl.size(); i++) {
+            System.out.println();
+            printIndent(indentLevel);
             n.vl.get(i).accept(this);
-            if (i + 1 < n.vl.size()) {
-                System.out.println();
-            }
+            System.out.print(" (line " + n.vl.get(i).line_number + ")");
         }
         for (int i = 0; i < n.ml.size(); i++) {
             System.out.println();
             n.ml.get(i).accept(this);
         }
-        //System.out.println();
+        indentLevel -= 1;
     }
 
     // Type t;
@@ -97,6 +101,7 @@ public class UglyPrintVisitor implements Visitor{
         System.out.print("MethodDecl ");
         n.i.accept(this);
         indentLevel += 1;
+        System.out.print(" (line " + n.line_number + ")");
         System.out.println();
         printIndent(indentLevel);
         System.out.print("returns ");
@@ -129,6 +134,7 @@ public class UglyPrintVisitor implements Visitor{
         printIndent(indentLevel);
         System.out.print("Return ");
         n.e.accept(this);
+        System.out.print(" (line " + n.e.line_number + ")");
         indentLevel -= 1;
     }
 
@@ -203,6 +209,7 @@ public class UglyPrintVisitor implements Visitor{
        // printIndent(indentLevel);
         System.out.print("Print");
         indentLevel += 1;
+        System.out.print(" (line " + n.line_number + ")");
         System.out.println();
         printIndent(indentLevel);
         n.e.accept(this);

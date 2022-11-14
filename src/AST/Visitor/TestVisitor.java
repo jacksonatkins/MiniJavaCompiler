@@ -12,6 +12,7 @@ public class TestVisitor implements Visitor{
     private Node previousNode;
     private Map<String, Node> currentScope;
     private Map<String, List<String>> dependency;
+    private int exitValue;
 
     public void visit(Display n) {
 
@@ -22,19 +23,22 @@ public class TestVisitor implements Visitor{
         TypeVisitor t = new TypeVisitor();
         n.accept(t);
         this.table = t.symbolTable();
-
+        n.exitValue = 0; // Initialize to no failure
+        this.exitValue = 0;
         // Initialize the current scope
         this.currentScope = new HashMap<>();
         this.dependency = new HashMap<>();
 
+        if (dependencyChecker()) {
+            this.exitValue = 1;
+            System.err.println("(Line " + n.line_number + ") Cycle detected in dependency graph. Check your class extensions.");
+        }
         // Loop through the classes in the Program
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
         }
-
-        if (dependencyChecker()) {
-            System.err.println("(Line " + n.line_number + ") Cycle detected in dependency graph. Check your class extensions.");
-        }
+        n.m.accept(this);
+        n.exitValue = this.exitValue;
     }
 
     public boolean dependencyChecker() {
@@ -49,10 +53,11 @@ public class TestVisitor implements Visitor{
                 this.dependency.get(s).add(((ClassExtendedNode)current).getExtendsName());
             }
         }
+        // A->B, B->Bar, Bar->A
         String start = new ArrayList<>(this.dependency.keySet()).get(0);
         Map<String, Integer> visited = new HashMap<>();
         LinkedList<String> queue = new LinkedList<>();
-        visited.put(start, 1);
+        //visited.put(start, 1);
         queue.add(start);
 
         while (queue.size() != 0) {
@@ -69,14 +74,13 @@ public class TestVisitor implements Visitor{
         return false;
     }
 
-
-
     public void visit(MainClass n) {
-
+        n.s.accept(this);
     }
 
     public void visit(ClassDeclSimple n) {
         if (!this.table.containsKey(n.i.s)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Undeclared class " + n.i.s);
         }
 
@@ -102,6 +106,7 @@ public class TestVisitor implements Visitor{
 
     public void visit(ClassDeclExtends n) {
         if (!this.table.containsKey(n.i.s)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Undeclared class " + n.i.s);
         }
 
@@ -117,7 +122,10 @@ public class TestVisitor implements Visitor{
 
         // Add variables from class to current scope
         this.currentScope.putAll(((ClassNode) this.currentNode).getFields());
-
+        for (String s : this.dependency.get(n.i.s)) {
+            ClassNode c = this.table.get(s);
+            this.currentScope.putAll(c.getFields());
+        }
 
         // Search through the methods
         this.previousNode = this.currentNode;
@@ -139,6 +147,7 @@ public class TestVisitor implements Visitor{
     public void visit(MethodDecl n) {
         // Make sure previous node is class
         if (!(this.previousNode instanceof ClassNode)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Method must be declared inside of a class.");
         }
 
@@ -163,6 +172,7 @@ public class TestVisitor implements Visitor{
         // Make sure that declared return type is the same as the actual returned type
         n.e.accept(this);
         if (!getType(n.t).equals(this.currentType)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.e.line_number + ") Returns " + this.currentType + ", should return " + getType(n.t));
         }
 
@@ -202,6 +212,7 @@ public class TestVisitor implements Visitor{
         // Verify that the expression is a boolean
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.BOOLEAN)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") If statement must be a boolean expression.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -217,6 +228,7 @@ public class TestVisitor implements Visitor{
         // Verify that the expression is a boolean
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.BOOLEAN)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") While statement must be a boolean expression.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -231,6 +243,7 @@ public class TestVisitor implements Visitor{
     public void visit(Print n) {
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.INTEGER)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot print non-integer values.");
             this.currentType = NodeType.UNKNOWN;
         }
@@ -246,6 +259,7 @@ public class TestVisitor implements Visitor{
         n.e.accept(this);
         NodeType right = this.currentType;
         if (!left.equals(right)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot assign variable of type " + left + " to variable of type "
                 + right);
             this.currentType = NodeType.UNKNOWN;
@@ -280,6 +294,8 @@ public class TestVisitor implements Visitor{
         }
         if (!flag) {
             this.currentType = NodeType.ARRAY;
+        } else {
+            this.exitValue = 1;
         }
     }
 
@@ -290,6 +306,7 @@ public class TestVisitor implements Visitor{
         NodeType right = this.currentType;
 
         if (!left.equals(NodeType.BOOLEAN) || !right.equals(NodeType.BOOLEAN)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot use && operator on non-boolean variables.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -304,6 +321,7 @@ public class TestVisitor implements Visitor{
         NodeType right = this.currentType;
 
         if (!left.equals(NodeType.INTEGER) || !right.equals(NodeType.INTEGER)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot compare non-integer variables.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -317,6 +335,7 @@ public class TestVisitor implements Visitor{
         e2.accept(this);
         NodeType right = this.currentType;
         if (!left.equals(right)) {
+            this.exitValue = 1;
             System.err.println("(Line " + line_number + ") Cannot " + type + " non-integer variables.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -343,6 +362,7 @@ public class TestVisitor implements Visitor{
         // Make sure that e2 is an integer
         n.e2.accept(this);
         if (!this.currentType.equals(NodeType.INTEGER)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot index array with non-integer variable.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -354,6 +374,7 @@ public class TestVisitor implements Visitor{
     public void visit(ArrayLength n) {
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.ARRAY)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot get length of non-array variable.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -364,6 +385,7 @@ public class TestVisitor implements Visitor{
     public void visit(Call n) {
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.CLASS)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot call method on non-class variable.");
             this.currentType = NodeType.UNKNOWN;
         }
@@ -374,16 +396,84 @@ public class TestVisitor implements Visitor{
                 calledMethod = ((ClassNode) this.previousNode).getMethods().get(m);
             }
         }
+        MethodNode parentMethod = null;
         if (calledMethod == null) {
+            if (!(this.previousNode instanceof ClassExtendedNode)) {
+                System.err.println("(Line " + n.line_number + ") Method " + n.i.s + " not found in current scope.");
+                this.currentType = NodeType.UNKNOWN;
+                return;
+            }
+            ClassExtendedNode c = (ClassExtendedNode) this.previousNode;
+            for (String parent : this.dependency.get(c.className)) {
+                for (String method : this.table.get(parent).getMethods().keySet()) {
+                    if (method.equals(n.i.s)) {
+                        calledMethod = this.table.get(parent).getMethods().get(method);
+                        break;
+                    }
+                }
+            }
+        } else {
+            if (this.previousNode instanceof ClassExtendedNode) {
+                ClassExtendedNode c = (ClassExtendedNode) this.previousNode;
+                for (String parent : this.dependency.get(c.className)) {
+                    for (String method : this.table.get(parent).getMethods().keySet()) {
+                        if (method.equals(n.i.s)) {
+                            parentMethod = this.table.get(parent).getMethods().get(method);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (calledMethod == null) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Method " + n.i.s + " not found in current scope.");
             this.currentType = NodeType.UNKNOWN;
             return;
         }
 
+        // Checks for overridden methods
+        if (parentMethod != null) {
+            // Check return type is the same
+            boolean flag = false;
+            if (!calledMethod.getReturnType().getType().equals(parentMethod.getReturnType().getType())) {
+                System.err.println("(Line " + n.line_number + ") Overrode methods must have same return type.");
+                flag = true;
+            }
+            // Check that the parameters are the same
+            if (calledMethod.getParameterTypes().size() != parentMethod.getParameterTypes().size()) {
+                System.err.println("(Line " + n.line_number + ") Overrode methods must have same number of parameters.");
+                flag = true;
+            }
+
+            for (int i = 0; i < calledMethod.getParameterTypes().size(); i++) {
+                if (!calledMethod.getParameterTypes().get(i).getType().equals(parentMethod.getParameterTypes().get(i).getType())) {
+                    System.err.println("(Line " + n.line_number + ") Overrode methods must have same parameter types.");
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag) {
+                this.exitValue = 1;
+                this.currentType = NodeType.UNKNOWN;
+                return;
+            }
+
+        }
+
         List<Node> parameterTypes = calledMethod.getParameterTypes();
+        if (parameterTypes.size() != n.el.size()) {
+            this.exitValue = 1;
+            System.err.println("(Line " + n.line_number + ") Incorrect number of parameters.");
+            this.currentType = NodeType.UNKNOWN;
+            return;
+        }
+
         for (int i = 0; i < n.el.size(); i++) {
             n.el.get(i).accept(this);
             if (!parameterTypes.get(i).getType().equals(this.currentType)) {
+                this.exitValue = 1;
                 System.err.println("(Line " + n.line_number + ") Incorrect parameter type at position " + (i+1) + ".");
                 this.currentType = NodeType.UNKNOWN;
                 return;
@@ -407,6 +497,7 @@ public class TestVisitor implements Visitor{
     public void visit(IdentifierExp n) {
         // Check that the identifier exists in the current scope
         if (!this.currentScope.containsKey(n.s)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Variable " + n.s + " not defined in the current scope.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -422,6 +513,7 @@ public class TestVisitor implements Visitor{
     public void visit(NewArray n) {
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.INTEGER)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot instantiate array with non-integer value.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -430,12 +522,22 @@ public class TestVisitor implements Visitor{
     }
 
     public void visit(NewObject n) {
+        if (!this.table.containsKey(n.i.s)) {
+            this.exitValue = 1;
+            System.err.println("(Line " + n.line_number + ") Cannot instantiate object of unknown class.");
+            return;
+        }
 
+        if (this.currentNode == null && this.previousNode == null) { // i.e. coming from main class
+            this.previousNode = this.table.get(n.i.s);
+        }
+        this.currentType = NodeType.CLASS;
     }
 
     public void visit(Not n) {
         n.e.accept(this);
         if (!this.currentType.equals(NodeType.BOOLEAN)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Cannot negate non-boolean variable.");
             this.currentType = NodeType.UNKNOWN;
             return;
@@ -446,6 +548,7 @@ public class TestVisitor implements Visitor{
     public void visit(Identifier n) {
         // Verify that the identifier is declared in the current scope
         if (!this.currentScope.containsKey(n.s)) {
+            this.exitValue = 1;
             System.err.println("(Line " + n.line_number + ") Variable " + n.s + " not defined in the current scope.");
             this.currentType = NodeType.UNKNOWN;
             return;

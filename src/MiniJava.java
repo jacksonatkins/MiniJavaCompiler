@@ -106,6 +106,7 @@ public class MiniJava {
                     //program.accept(new TypeVisitor());
                     program.accept(new TestVisitor());
                     System.out.println("\n");
+                    System.exit(program.getExitValue());
                 }
             }
             System.exit(0);
