@@ -18,7 +18,7 @@ import static org.junit.Assert.fail;
 
 public class TestSemantics {
 
-    private static final String RESOURCE_DIR = "test/resources/Semantics/";
+    private static final String RESOURCE_DIR = "../test/resources/Semantics/";
 
     private final ByteArrayOutputStream err = new ByteArrayOutputStream();
     private final PrintStream stderr = System.err;
@@ -67,5 +67,14 @@ public class TestSemantics {
 
     @Test
     public void testClasses() { test("Classes"); }
+
+    @Test
+    public void testMethodCalls() { test("MethodCalls"); }
+
+    @Test
+    public void testSubclassTypes() { test("SubclassTypes"); }
+
+    @Test
+    public void testAccessControl() { test("AccessControl"); }
 
 }
