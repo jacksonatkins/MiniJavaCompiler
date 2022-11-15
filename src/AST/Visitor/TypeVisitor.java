@@ -20,96 +20,70 @@ public class TypeVisitor implements Visitor {
         return this.globalTable;
     }
 
-    public void printSymbolTable() {
-        Map<String, MethodNode> globalMethods = new HashMap<>();
+    public void showTable() {
         for (String className : this.globalTable.keySet()) {
             ClassNode classNode = this.globalTable.get(className);
             String extendsName = "";
             if (classNode instanceof ClassExtendedNode) {
                 extendsName = ((ClassExtendedNode) classNode).getExtendsName();
             }
-            System.out.print("Class " + className);
+            String classOutput = "";
+            classOutput += "Class " + className;
             if (!extendsName.equals("")) {
-                System.out.print(" extends " + extendsName);
+                classOutput += " extends " + extendsName;
             }
+            System.out.println(classOutput);
             if (classNode.getFields().size() > 0) {
-                System.out.print(" | Fields: ");
+                System.out.println("    Fields: ");
                 Map<String, Node> fields = classNode.getFields();
                 List<String> fieldNames = new ArrayList<>(fields.keySet());
-                String currentName = fieldNames.get(0);
-                Node currentNode = fields.get(currentName);
-                if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
-                    System.out.print(currentNode.idType() + " " + currentName);
-                } else {
-                    System.out.print(currentNode.getType() + " " + currentName);
-                }
-                for (int i = 1; i < fieldNames.size(); i++) {
-                    currentName = fieldNames.get(i);
-                    currentNode = fields.get(currentName);
+                for (int i = 0; i < fieldNames.size(); i++) {
+                    String currentName = fieldNames.get(i);
+                    Node currentNode = fields.get(currentName);
                     if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
-                        System.out.print(", " + currentNode.idType() + " " + currentName);
+                        System.out.println("        " + currentNode.idType() + " " + currentName);
                     } else {
-                        System.out.print(", " + currentNode.getType() + " " + currentName);
+                        System.out.println("        " + currentNode.getType() + " " + currentName);
                     }
                 }
             }
-            globalMethods.putAll(classNode.getMethods());
-            System.out.print(" | Methods: ");
-            List<String> methodNames = new ArrayList<>(classNode.getMethods().keySet());
-            System.out.print(methodNames.get(0));
-            for (int i = 1; i < methodNames.size(); i++) {
-                System.out.print(", " + methodNames.get(i));
-            }
-            System.out.println();
-        }
-        System.out.println();
-        for (String methodName : globalMethods.keySet()) {
-            MethodNode methodNode = globalMethods.get(methodName);
-            if (methodNode.getReturnType().getType().equals(NodeType.IDENTIFIER)) {
-                System.out.print("Method " + methodName + " | Returns " + methodNode.getReturnType().idType());
-            } else {
-                System.out.print("Method " + methodName + " | Returns " + methodNode.getReturnType().getType());
-            }
-            if (methodNode.getParameters().size() > 0) {
-                System.out.print(" | Parameters: ");
-                Map<String, Node> parameters = methodNode.getParameters();
-                List<String> paramNames = new ArrayList<>(parameters.keySet());
-                String currentName = paramNames.get(0);
-                Node currentNode = parameters.get(currentName);
-                if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
-                    System.out.print(currentNode.idType() + " " + currentName);
+            Map<String, MethodNode> methods = this.globalTable.get(className).getMethods();
+            System.out.println("    Methods:");
+            for (String methodName : methods.keySet()) {
+                MethodNode node = methods.get(methodName);
+                if (node.getReturnType().getType().equals(NodeType.IDENTIFIER)) {
+                    System.out.println("        " + node.getReturnType().idType() + " " + methodName);
                 } else {
-                    System.out.print(currentNode.getType() + " " + currentName);
+                    System.out.println("        " + node.getReturnType().getType() + " " + methodName);
                 }
-                for (int i = 1; i < paramNames.size(); i++) {
-                    currentName = paramNames.get(i);
-                    currentNode = parameters.get(currentName);
-                    if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
-                        System.out.print(", " + currentNode.idType() + " " + currentName);
-                    } else {
-                        System.out.print(", " + currentNode.getType() + " " + currentName);
-                    }
-                }
-            }
 
-            if (methodNode.getLocalVars().size() > 0) {
-                System.out.print(" | Local Vars: ");
-                Map<String, Node> localVars = methodNode.getLocalVars();
-                List<String> varNames = new ArrayList<>(localVars.keySet());
-                String currentName = varNames.get(0);
-                Node currentNode = localVars.get(currentName);
-                if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
-                    System.out.print(currentNode.idType() + " " + currentName);
-                } else {
-                    System.out.print(currentNode.getType() + " " + currentName);
+                if (node.getParameters().size() > 0) {
+                    System.out.println("            Parameters:");
+                    Map<String, Node> parameters = node.getParameters();
+                    List<String> paramNames = new ArrayList<>(parameters.keySet());
+                    for (int i = 0; i < paramNames.size(); i++) {
+                        String currentName = paramNames.get(i);
+                        Node currentNode = parameters.get(currentName);
+                        if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
+                            System.out.println("                " + currentNode.idType() + " " + currentName);
+                        } else {
+                            System.out.println("                " + currentNode.getType() + " " + currentName);
+                        }
+                    }
                 }
-                for (int i = 1; i < varNames.size(); i++) {
-                    currentName = varNames.get(i);
-                    currentNode = localVars.get(currentName);
-                    if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
-                        System.out.print(", " + currentNode.idType() + " " + currentName);
-                    } else {
-                        System.out.print(", " + currentNode.getType() + " " + currentName);
+
+                if (node.getLocalVars().size() > 0) {
+                    System.out.println("            Local Vars:");
+                    Map<String, Node> localVars = node.getLocalVars();
+                    List<String> varNames = new ArrayList<>(localVars.keySet());
+                    for (int i = 0; i < varNames.size(); i++) {
+                        String currentName = varNames.get(i);
+                        Node currentNode = localVars.get(currentName);
+                        if (currentNode.getType().equals(NodeType.IDENTIFIER)) {
+                            System.out.println("                " + currentNode.idType() + " " + currentName);
+                        } else {
+                            System.out.println("                " + currentNode.getType() + " " + currentName);
+                        }
                     }
                 }
             }
@@ -119,11 +93,10 @@ public class TypeVisitor implements Visitor {
 
     public void visit(Program n) {
         this.globalTable = new HashMap<>();
-        // n.m.accept(this);
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
         }
-        printSymbolTable();
+        showTable();
     }
 
     public void visit(MainClass n) {
