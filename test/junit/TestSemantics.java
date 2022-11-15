@@ -65,4 +65,7 @@ public class TestSemantics {
     @Test
     public void testInheritanceCycle() { test("InheritanceCycle"); }
 
+    @Test
+    public void testClasses() { test("Classes"); }
+
 }
