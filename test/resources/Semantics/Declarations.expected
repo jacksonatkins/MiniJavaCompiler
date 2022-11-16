@@ -1,4 +1,4 @@
-(Line 11) Variable x not defined in current scope.
-(Line 12) Variable y not defined in current scope.
-(Line 12) Variable z not defined in current scope.
-(Line 12) Variable b not defined in current scope.
+(Line 11) Variable x not defined in the current scope.
+(Line 12) Variable y not defined in the current scope.
+(Line 12) Variable z not defined in the current scope.
+(Line 13) Variable b not defined in the current scope.
