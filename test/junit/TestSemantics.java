@@ -75,6 +75,9 @@ public class TestSemantics {
     public void testSubclassTypes() { test("SubclassTypes"); }
 
     @Test
+    public void testOverrides() { test("Overrides"); }
+
+    @Test
     public void testAccessControl() { test("AccessControl"); }
 
 }
