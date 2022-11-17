@@ -1,2 +1,6 @@
-Additional checks/extensions
-Any changes to previous parts of the project
+We made no additional checks or extensions outside of the requirements described in the semantics specification.
+
+We made slight changes to the previous portions of the project (AST) during the our work on the semantic piece. We added
+an exit value to the Program AST node, which allows us to exit MiniJava properly if any errors occur during the type-checking
+pass over the global symbol table. We also added the package "TypeNode", which allowed us to gather the real types of
+nodes in the AST. We also had to add a missed grammar piece from the parser portion (in minijava.cup).
