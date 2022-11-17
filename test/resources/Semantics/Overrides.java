@@ -36,6 +36,6 @@ class E {
 
 class F extends E {
     public int foo(boolean x) {
-        return false;
+        return 0; // needs to be integer
     }
 }

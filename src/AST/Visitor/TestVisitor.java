@@ -160,8 +160,56 @@ public class TestVisitor implements Visitor{
         this.currentScope.putAll(m.getParameters());
         this.currentScope.putAll(m.getLocalVars());
 
-        // Do something else with these vars?
-
+        // If the method overrides another method from a parent class, we need to verify two things
+        if (this.previousNode instanceof ClassExtendedNode) {
+            String parent = ((ClassExtendedNode)this.previousNode).getExtendsName();
+            ClassNode parentNode = this.table.get(parent);
+            if (parentNode.getMethods().containsKey(n.i.s)) {
+                MethodNode parentMethod = parentNode.getMethods().get(n.i.s);
+                // Does this method have the same return type?
+                if (parentMethod.getReturnType().getType().equals(NodeType.IDENTIFIER)) {
+                    String idName = parentMethod.getReturnType().idType();
+                    if (!idName.equals(m.getReturnType().idType()) && !this.dependency.get(m.getReturnType().idType()).contains(idName)) {
+                        this.exitValue = 1;
+                        this.currentType = NodeType.UNKNOWN;
+                        System.err.println("(Line " + n.line_number + ") Overrode methods must have same return type.");
+                        return;
+                    }
+                }
+                if (!m.getReturnType().getType().equals(parentMethod.getReturnType().getType())) {
+                    this.exitValue = 1;
+                    this.currentType = NodeType.UNKNOWN;
+                    System.err.println("(Line " + n.line_number + ") Overrode methods must have same return type.");
+                    return;
+                }
+                // Does this method have the same #/type of parameters?
+                List<Node> parentParams = parentMethod.getParameterTypes();
+                List<Node> childParams = m.getParameterTypes();
+                if (parentParams.size() != childParams.size()) {
+                    this.exitValue = 1;
+                    this.currentType = NodeType.UNKNOWN;
+                    System.err.println("(Line " + n.line_number + ") Overrode methods must have same number of parameters.");
+                    return;
+                }
+                for (int i = 0; i < parentParams.size(); i++) {
+                    if (parentParams.get(i).getType().equals(NodeType.IDENTIFIER)) {
+                        String paramName = parentParams.get(i).idType();
+                        if (!paramName.equals(childParams.get(i).idType())) {
+                            this.exitValue = 1;
+                            this.currentType = NodeType.UNKNOWN;
+                            System.err.println("(Line " + n.line_number + ") Overrode methods must have same parameter types.");
+                            return;
+                        }
+                    }
+                    if (!parentParams.get(i).getType().equals(childParams.get(i).getType())) {
+                        this.exitValue = 1;
+                        this.currentType = NodeType.UNKNOWN;
+                        System.err.println("(Line " + n.line_number + ") Overrode methods must have same parameter types.");
+                        return;
+                    }
+                }
+            }
+        }
         // Check through the statement list
         for (int i = 0; i < n.sl.size(); i++) {
             n.sl.get(i).accept(this);
@@ -204,7 +252,12 @@ public class TestVisitor implements Visitor{
     }
 
     public void visit(Block n) {
-
+        if (this.currentType.equals(NodeType.UNKNOWN)) {
+            return;
+        }
+        for (int i = 0; i < n.sl.size(); i++) {
+            n.sl.get(i).accept(this);
+        }
     }
 
     public void visit(If n) {

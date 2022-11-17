@@ -78,6 +78,12 @@ public class TestSemantics {
     public void testOverrides() { test("Overrides"); }
 
     @Test
+    public void testOverridesIdentifier() { test("OverridesIdentifier"); }
+
+    @Test
+    public void testOverridesSubclass() { test("OverridesSubclass"); }
+
+    @Test
     public void testAccessControl() { test("AccessControl"); }
 
 }
