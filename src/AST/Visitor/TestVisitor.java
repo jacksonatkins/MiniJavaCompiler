@@ -24,13 +24,16 @@ public class TestVisitor implements Visitor{
         TypeVisitor t = new TypeVisitor();
         n.accept(t);
         this.table = t.symbolTable();
+        Map<Integer, String> errors = t.returnErrors();
         n.exitValue = 0; // Initialize to no failure
         this.exitValue = 0;
         // Initialize the current scope
         this.currentScope = new HashMap<>();
         this.dependency = new HashMap<>();
-
-        ClassNode out = dependencyChecker();
+        ClassNode out = null;
+        if (n.cl.size() > 0) {
+            out = dependencyChecker();
+        }
         if (out != null) {
             int line = -1;
             this.exitValue = 1;
@@ -48,6 +51,9 @@ public class TestVisitor implements Visitor{
         }
         n.m.accept(this);
         n.exitValue = this.exitValue;
+        for (int line : errors.keySet()) {
+            System.err.println(errors.get(line));
+        }
     }
 
     public ClassNode dependencyChecker() {
@@ -62,6 +68,7 @@ public class TestVisitor implements Visitor{
                 this.dependency.get(s).add(((ClassExtendedNode)current).getExtendsName());
             }
         }
+
         String start = new ArrayList<>(this.dependency.keySet()).get(0);
         Map<String, Integer> visited = new HashMap<>();
         LinkedList<String> queue = new LinkedList<>();
@@ -95,6 +102,20 @@ public class TestVisitor implements Visitor{
         this.currentNode = this.table.get(n.i.s);
         this.currentType = NodeType.CLASS;
 
+        ClassNode node = (ClassNode) this.currentNode;
+        int pos = 0;
+        for (String localVar : node.getFields().keySet()) {
+            Node type = node.getFields().get(localVar);
+            if (type.getType().equals(NodeType.IDENTIFIER)) {
+                if (!this.table.containsKey(type.idType())) {
+                    this.exitValue = 1;
+                    this.currentType = NodeType.UNKNOWN;
+                    System.err.println("(Line " + (n.vl.line_number+pos) + ") Type " + type.idType() + " not defined in the current scope.");
+                    return;
+                }
+            }
+            pos += 1;
+        }
         // Add variables from class to current scope
         this.currentScope.putAll(((ClassNode) this.currentNode).getFields());
 
@@ -114,13 +135,31 @@ public class TestVisitor implements Visitor{
     public void visit(ClassDeclExtends n) {
         if (!this.table.containsKey(n.i.s)) {
             this.exitValue = 1;
-            System.err.println("(Line " + n.line_number + ") Undeclared class " + n.i.s);
+            System.err.println("(Line " + n.line_number + ") Undeclared class " + n.i.s + ".");
+            return;
+        }
+        if (!this.table.containsKey(n.j.s)) {
+            this.exitValue = 1;
+            System.err.println("(Line " + n.line_number + ") Undeclared parent class " + n.j.s + ".");
+            return;
         }
 
         // Initialize the current node
         this.currentNode = this.table.get(n.i.s);
         this.currentType = NodeType.CLASS;
 
+        ClassExtendedNode node = (ClassExtendedNode) this.currentNode;
+        for (String localVar : node.getFields().keySet()) {
+            Node type = node.getFields().get(localVar);
+            if (type.getType().equals(NodeType.IDENTIFIER)) {
+                if (!this.table.containsKey(type.idType())) {
+                    this.exitValue = 1;
+                    this.currentType = NodeType.UNKNOWN;
+                    System.err.println("(Line " + n.vl.line_number + ") Type " + type.idType() + " not defined in the current scope.");
+                    return;
+                }
+            }
+        }
         // Add variables from class to current scope
         this.currentScope.putAll(((ClassNode) this.currentNode).getFields());
         for (String s : this.dependency.get(n.i.s)) {
@@ -157,6 +196,30 @@ public class TestVisitor implements Visitor{
         this.currentNode = m;
 
         // Add all variables from parameter list and local decls to the current scope
+        for (String parameter : m.getParameters().keySet()) {
+            Node type = m.getParameters().get(parameter);
+            if (type.getType().equals(NodeType.IDENTIFIER)) {
+                if (!this.table.containsKey(type.idType())) {
+                    this.exitValue = 1;
+                    this.currentType = NodeType.UNKNOWN;
+                    System.err.println("(Line " + n.fl.line_number + ") Type " + type.idType() + " not defined in the current scope.");
+                    return;
+                }
+            }
+        }
+
+        for (String localVar : m.getLocalVars().keySet()) {
+            Node type = m.getLocalVars().get(localVar);
+            if (type.getType().equals(NodeType.IDENTIFIER)) {
+                if (!this.table.containsKey(type.idType())) {
+                    this.exitValue = 1;
+                    this.currentType = NodeType.UNKNOWN;
+                    System.err.println("(Line " + n.vl.line_number + ") Type " + type.idType() + " not defined in the current scope.");
+                    return;
+                }
+            }
+        }
+
         this.currentScope.putAll(m.getParameters());
         this.currentScope.putAll(m.getLocalVars());
 
@@ -215,7 +278,13 @@ public class TestVisitor implements Visitor{
             n.sl.get(i).accept(this);
         }
 
-
+        if (getType(n.t).equals(NodeType.CLASS)) {
+            IdentifierType it = (IdentifierType) n.t;
+            if (!this.table.containsKey(it.s)) {
+                this.exitValue = 1;
+                System.err.println("(Line " + n.t.line_number + ") Return type of " + it.s + " not defined in current scope.");
+            }
+        }
         // Make sure that declared return type is the same as the actual returned type
         n.e.accept(this);
         if (!getType(n.t).equals(this.currentType)) {
@@ -473,6 +542,16 @@ public class TestVisitor implements Visitor{
             if (m.equals(n.i.s)) {
                 calledMethod = ((ClassNode) this.previousNode).getMethods().get(m);
                 break;
+            }
+        }
+        if (calledMethod == null) {
+            for (String c : this.table.keySet()) {
+                for (String m : this.table.get(c).getMethods().keySet()) {
+                    if (m.equals(n.i.s)) {
+                        calledMethod = this.table.get(c).getMethods().get(m);
+                        break;
+                    }
+                }
             }
         }
         MethodNode parentMethod = null;

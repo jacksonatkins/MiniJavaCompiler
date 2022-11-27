@@ -8,7 +8,7 @@ import java.util.*;
 public class TypeVisitor implements Visitor {
 
     private HashMap<String, ClassNode> globalTable;
-
+    private Map<Integer, String> errors;
     private MethodNode currentMethod;
     private ClassNode currentClass;
 
@@ -18,6 +18,10 @@ public class TypeVisitor implements Visitor {
 
     public HashMap<String, ClassNode> symbolTable() {
         return this.globalTable;
+    }
+
+    public Map<Integer, String> returnErrors() {
+        return this.errors;
     }
 
     public void showTable() {
@@ -93,6 +97,7 @@ public class TypeVisitor implements Visitor {
 
     public void visit(Program n) {
         this.globalTable = new HashMap<>();
+        this.errors = new HashMap<>();
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
         }
@@ -104,6 +109,10 @@ public class TypeVisitor implements Visitor {
     }
 
     public void visit(ClassDeclSimple n) {
+        if (this.globalTable.containsKey(n.i.s)) {
+            this.errors.put(n.line_number, "(Line " + n.line_number + ") Cannot declare the same class multiple times.");
+            return;
+        }
         this.globalTable.put(n.i.s, new ClassNode(n.i.s));
         this.currentClass = this.globalTable.get(n.i.s);
         for (int i = 0; i < n.vl.size(); i++) {
@@ -117,6 +126,10 @@ public class TypeVisitor implements Visitor {
     }
 
     public void visit(ClassDeclExtends n) {
+        if (this.globalTable.containsKey(n.i.s)) {
+            this.errors.put(n.line_number, "(Line " + n.line_number + ") Cannot declare the same class multiple times.");
+            return;
+        }
         this.globalTable.put(n.i.s, new ClassExtendedNode(n.i.s, n.j.s));
         this.currentClass = this.globalTable.get(n.i.s);
         for (int i = 0; i < n.vl.size(); i++) {
@@ -136,8 +149,16 @@ public class TypeVisitor implements Visitor {
         }
 
         if (this.currentMethod != null) {
+            if (this.currentMethod.getLocalVars().containsKey(n.i.s)) {
+                this.errors.put(n.line_number, "(Line " + n.line_number + ") Cannot declare variable multiple times within a method.");
+                return;
+            }
             this.currentMethod.getLocalVars().put(n.i.s, current);
         } else {
+            if (this.currentClass.getFields().containsKey(n.i.s)) {
+                this.errors.put(n.line_number, "(Line " + n.line_number + ") Cannot declare field multiple times within a class.");
+                return;
+            }
             this.currentClass.getFields().put(n.i.s, current);
         }
     }
@@ -148,6 +169,10 @@ public class TypeVisitor implements Visitor {
             returnType.idType = ((IdentifierType)n.t).s;
         }
         this.currentMethod = new MethodNode(returnType);
+        if (this.currentClass.getMethods().containsKey(n.i.s)) {
+            this.errors.put(n.line_number, "(Line " + n.line_number + ") Cannot declare the same method multiple times within the same class.");
+            return;
+        }
         this.currentClass.getMethods().put(n.i.s, this.currentMethod);
 
         for (int i = 0; i < n.fl.size(); i++) {

@@ -106,7 +106,8 @@ import Parser.sym;
 
 /* Helper definitions */
 letter = [a-zA-Z]
-digit = [0-9]
+digit = [1-9]
+zero = [0]
 eol = [\r\n]
 white = {eol}|[ \t]
 
@@ -160,7 +161,11 @@ white = {eol}|[ \t]
 "while" { return symbol(sym.WHILE); }
 
 /* literal */
-{digit}+ {
+{digit} ({digit} | {zero})* {
+    return symbol(sym.DIGIT, yytext());
+}
+
+{zero} {
     return symbol(sym.DIGIT, yytext());
 }
 

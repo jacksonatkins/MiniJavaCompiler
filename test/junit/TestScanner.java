@@ -14,7 +14,7 @@ import org.junit.Test;
 
 public class TestScanner {
 
-    public static final String TEST_FILES_LOCATION = "test/resources/Scanner/";
+    public static final String TEST_FILES_LOCATION = "../test/resources/Scanner/";
     public static final String TEST_FILES_INPUT_EXTENSION = ".java";
     public static final String TEST_FILES_EXPECTED_EXTENSION = ".expected";
 
