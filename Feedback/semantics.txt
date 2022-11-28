@@ -8,7 +8,7 @@ False negative: methods of a class cannot be declared more than once. (-2)
 
 False negative: variables in a method cannot be declared more than once. (-2)
 
-False positive: “System.out.println” can only take integer arguments. (-2)
+False positive: “System.out.println” can only take integer arguments. (-0)
 
 False negative: a method cannot take an undeclared type as an argument. For example, if class Bar is not defined, then ‘public int foo(Bar b)’ should fail type checking. (-2)
 
@@ -21,5 +21,7 @@ False positive:  semantics checker incorrectly states that classes cannot be ass
 False positive:  semantics checker incorrectly states that a method was called on non-class variable. (-2)
 
 False positive: semantics checker incorrectly reports a method is missing when the method actually exists. (-2)
+
+False positive: The checker doesn’t handle field shadowing properly; subclasses can redeclare fields with different types. (-2)
 
 Total: 58/80
