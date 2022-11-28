@@ -2,6 +2,8 @@ package AST.Visitor;
 
 import AST.*;
 import java.util.*;
+
+import CodeGeneration.Dependency;
 import TypeNode.*;
 
 public class CodeGenerationVisitor implements Visitor{
@@ -11,7 +13,8 @@ public class CodeGenerationVisitor implements Visitor{
     private String methodClass;
     private String methodName;
 
-    private Map<String, Map<String, Integer>> vTable; // Maps class name -> map (methods, method offsets)
+    private Map<String, List<String>> vtables;
+    //private Map<String, Map<String, Integer>> vTable; // Maps class name -> map (methods, method offsets)
     private Map<String, Integer> objectSizes;
     private Map<String, Map<String, Integer>> methodVariableOffsets;
     private Map<String, Map<String, Integer>> classVariableOffsets;
@@ -28,7 +31,7 @@ public class CodeGenerationVisitor implements Visitor{
         this.frameSize = 1;
         this.code = new ArrayList<>();
         this.data = new ArrayList<>();
-        this.vTable = new HashMap<>();
+        this.vtables = new HashMap<>();
         this.objectSizes = new HashMap<>();
         this.methodVariableOffsets = new HashMap<>();
         this.classVariableOffsets = new HashMap<>();
@@ -45,7 +48,7 @@ public class CodeGenerationVisitor implements Visitor{
         int classOffset = 1;
 
         for (String className : table.keySet()) {
-            this.vTable.put(className, new HashMap<>());
+            //this.vTable.put(className, new HashMap<>());
             int objectSize = table.get(className).getFields().size();
             this.objectSizes.put(className, 8 + 8 * objectSize);
             this.classVariableOffsets.put(className, new HashMap<>());
@@ -57,7 +60,7 @@ public class CodeGenerationVisitor implements Visitor{
 
             Map<String, MethodNode> methods = table.get(className).getMethods();
             for (String method : methods.keySet()) {
-                this.vTable.get(className).put(method, methodOffset * 8);
+                //this.vTable.get(className).put(method, methodOffset * 8);
                 this.methodVariableOffsets.put(method, new HashMap<>());
 
                 Map<String, Node> localVars = methods.get(method).getLocalVars();
@@ -72,6 +75,41 @@ public class CodeGenerationVisitor implements Visitor{
             classOffset = 1;
         }
     }
+
+    public void vtables(Map<String, ClassNode> symbolTable, Map<String, Dependency> dependencyGraph) {
+        for (String symbol : symbolTable.keySet()) {
+            vtable(symbol, dependencyGraph);
+        }
+    }
+
+    public List<String> vtable(String classIdentifier, Map<String, Dependency> dependencyGraph) {
+        List<String> vtable = new ArrayList<>();
+
+        if (dependencyGraph.get(classIdentifier).dependencies != null) {
+            String dependencyIdentifier = dependencyGraph.get(classIdentifier).dependencies;
+
+            if (this.vtables.containsKey(dependencyIdentifier)) {
+                for (String methodIdentifier : this.vtables.get(dependencyIdentifier)) {
+                    vtable.add(methodIdentifier);
+                }
+            } else {
+                for (String methodIdentifier : vtable(dependencyIdentifier, dependencyGraph)) {
+                    vtable.add(methodIdentifier);
+                }
+            }
+        }
+
+        for (String methodIdentifier : dependencyGraph.get(classIdentifier).methods) {
+            vtable.add(methodIdentifier);
+        }
+
+        if (!this.vtables.containsKey(classIdentifier)) {
+            this.vtables.put(classIdentifier, vtable);
+        }
+
+        return vtable;
+    }
+
 
     public void visit(Display n) {
 
@@ -122,7 +160,7 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(ClassDeclSimple n) {
         this.methodClass = n.i.s;
-        this.vTable.put(n.i.s, new HashMap<>()); // Add class to vTable
+        //this.vTable.put(n.i.s, new HashMap<>()); // Add class to vTable
         // String formatting for the method vtable
         String className = String.format("%s$$:", n.i.s);
         int space = className.length() + 2;
@@ -145,6 +183,10 @@ public class CodeGenerationVisitor implements Visitor{
         String className = String.format("%s$$", n.i.s);
         int space = className.length() + 2;
         this.data.add(className + "  .quad " + n.j.s + "$$");
+
+        for (int i = 0; i < vtables.get(n.i.s).size(); i++) {
+            String important = ".quad "
+        }
 
         this.data.add("");
     }
@@ -281,7 +323,7 @@ public class CodeGenerationVisitor implements Visitor{
             gen("movq", "%rax", this.registers.get(i)); // fill in parameters
         }
         gen("movq", "0(%rdi)", "%rax");
-        gen("addq", "$" + this.vTable.get(this.methodClass).get(n.i.s), "%rax");
+        gen("addq", "$" + 8 * (this.vtables.get(this.methodClass).indexOf(n.i.s) + 1), "%rax");
         gen("movq", "(%rax)", "%rax");
         gen("    call    *%rax");
         // put stuff back to registers
