@@ -16,8 +16,12 @@ False negative: a method cannot return an undeclared type. For example, if class
 
 The compiler crashed with an Exception when compiling a program solely consisting of the line System.out.println(123) in main. (-2)
 
+False positive:  semantics checker incorrectly states that classes cannot be assigned to variable of type identifier. (-2)
+
 False positive:  semantics checker incorrectly states that a method was called on non-class variable. (-2)
+
+False positive: semantics checker incorrectly reports a method is missing when the method actually exists. (-2)
 
 False positive: The checker doesn’t handle field shadowing properly; subclasses can redeclare fields with different types. (-2)
 
-Total: 62/80
+Total: 58/80
