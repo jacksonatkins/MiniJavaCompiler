@@ -4,6 +4,7 @@ import AST.*;
 import java.util.*;
 
 import CodeGeneration.Dependency;
+import CodeGeneration.Method;
 import TypeNode.*;
 
 public class CodeGenerationVisitor implements Visitor{
@@ -13,7 +14,7 @@ public class CodeGenerationVisitor implements Visitor{
     private String methodClass;
     private String methodName;
 
-    private Map<String, List<String>> vtables;
+    private Map<String, List<Method>> vtables;
     //private Map<String, Map<String, Integer>> vTable; // Maps class name -> map (methods, method offsets)
     private Map<String, Integer> objectSizes;
     private Map<String, Map<String, Integer>> methodVariableOffsets;
@@ -82,25 +83,41 @@ public class CodeGenerationVisitor implements Visitor{
         }
     }
 
-    public List<String> vtable(String classIdentifier, Map<String, Dependency> dependencyGraph) {
-        List<String> vtable = new ArrayList<>();
+    public List<Method> vtable(String classIdentifier, Map<String, Dependency> dependencyGraph) {
+        List<Method> vtable = new ArrayList<>();
 
         if (dependencyGraph.get(classIdentifier).dependencies != null) {
             String dependencyIdentifier = dependencyGraph.get(classIdentifier).dependencies;
 
             if (this.vtables.containsKey(dependencyIdentifier)) {
-                for (String methodIdentifier : this.vtables.get(dependencyIdentifier)) {
-                    vtable.add(methodIdentifier);
+                for (Method method : this.vtables.get(dependencyIdentifier)) {
+                    vtable.add(method);
                 }
             } else {
-                for (String methodIdentifier : vtable(dependencyIdentifier, dependencyGraph)) {
-                    vtable.add(methodIdentifier);
+                for (Method method : vtable(dependencyIdentifier, dependencyGraph)) {
+                    vtable.add(method);
                 }
             }
         }
 
         for (String methodIdentifier : dependencyGraph.get(classIdentifier).methods) {
-            vtable.add(methodIdentifier);
+            boolean hasMethod = false;
+            Method existingMethod = null;
+
+            for (Method method : vtable) {
+                if (methodIdentifier.equals(method.identifier)) {
+                    existingMethod = method;
+                    hasMethod = true;
+                }
+            }
+
+            if (!hasMethod) {
+                vtable.add(new Method(methodIdentifier, classIdentifier));
+            } else {
+                int index = vtable.indexOf(existingMethod);
+                vtable.add(index, new Method(methodIdentifier, classIdentifier));
+                vtable.remove(existingMethod);
+            }
         }
 
         if (!this.vtables.containsKey(classIdentifier)) {
@@ -116,7 +133,12 @@ public class CodeGenerationVisitor implements Visitor{
     }
 
     public void visit(Program n) {
+        DependencyVisitor dependencyVisitor = new DependencyVisitor();
+        n.accept(dependencyVisitor);
+
         n.accept(tv);
+        vtables(tv.symbolTable(), dependencyVisitor.dependencyGraph);
+
         generateVTable(tv.symbolTable());
         n.m.accept(this);
         gen("");
@@ -185,7 +207,9 @@ public class CodeGenerationVisitor implements Visitor{
         this.data.add(className + "  .quad " + n.j.s + "$$");
 
         for (int i = 0; i < vtables.get(n.i.s).size(); i++) {
-            String important = ".quad "
+            Method method = vtables.get(n.i.s).get(i);
+            String important = ".quad " + method.implementorIdentifier + "$" + method.identifier;
+            this.data.add(addSpace(important, space));
         }
 
         this.data.add("");
