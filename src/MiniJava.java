@@ -78,7 +78,7 @@ public class MiniJava {
                 System.err.println("Error occurred during scanning, exiting...");
                 System.exit(1);
             }
-            if (flags.contains(Flag.A) || flags.contains(Flag.P) || flags.contains(Flag.T)) {
+            //if (flags.contains(Flag.A) || flags.contains(Flag.P) || flags.contains(Flag.T)) {
                 // If the user passes S and A/P, we reset the scanner to allow the tokens to be printed and pass the
                 // tokens to the parser
                 if (flags.contains(Flag.S)) {
@@ -103,16 +103,18 @@ public class MiniJava {
                     System.out.print("\n");
                 }
                 if (flags.contains(Flag.T)) {
-                    //program.accept(new TestVisitor());
-                    CodeGenerationVisitor c = new CodeGenerationVisitor(new TypeVisitor());
-                    program.accept(c);
-                    for (String line : c.getCode()) {
-                        System.out.println(line);
-                    }
+                    program.accept(new TestVisitor());
                     System.out.println("\n");
                     System.exit(program.getExitValue());
                 }
-            }
+                CodeGenerationVisitor c = new CodeGenerationVisitor(new TypeVisitor());
+                program.accept(c);
+                for (String line : c.getCode()) {
+                    System.out.println(line);
+                }
+                System.out.println("\n");
+                System.exit(program.getExitValue());
+            //}
             System.exit(0);
         } catch (Exception e) {
             System.err.println("Unexpected internal compiler error: " +

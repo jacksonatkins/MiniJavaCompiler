@@ -101,7 +101,6 @@ public class TypeVisitor implements Visitor {
         for (int i = 0; i < n.cl.size(); i++) {
             n.cl.get(i).accept(this);
         }
-        showTable();
     }
 
     public void visit(MainClass n) {

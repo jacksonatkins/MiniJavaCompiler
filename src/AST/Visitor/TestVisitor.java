@@ -23,6 +23,7 @@ public class TestVisitor implements Visitor{
         // Initialize the global symbol table
         TypeVisitor t = new TypeVisitor();
         n.accept(t);
+        t.showTable();
         this.table = t.symbolTable();
         Map<Integer, String> errors = t.returnErrors();
         n.exitValue = 0; // Initialize to no failure
