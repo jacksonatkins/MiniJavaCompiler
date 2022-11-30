@@ -397,10 +397,12 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(Call n) {
         n.e.accept(this); // leave the pointer in %rax
+        Stack<String> toPop = new Stack<>();
         push("%rdi"); // Save current rdi value
         gen("movq", "%rax", "%rdi"); // "this" pointer is first argument
         for (int i = 0; i < n.el.size(); i++) { // 2 parameters
             push(this.registers.get(i));
+            toPop.push(this.registers.get(i));
             n.el.get(i).accept(this); // Puts it into rax
             gen("movq", "%rax", this.registers.get(i)); // fill in parameters
         }
@@ -415,7 +417,7 @@ public class CodeGenerationVisitor implements Visitor{
         gen("movq", offset + "(%rax)", "%rax");
         gen("    call    *%rax");
         for (int i = 0; i < n.el.size(); i++) {
-            pop(this.registers.get(i));
+            pop(toPop.pop());
         }
         pop("%rdi");
     }
