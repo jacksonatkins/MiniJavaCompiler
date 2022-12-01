@@ -388,11 +388,16 @@ public class CodeGenerationVisitor implements Visitor{
     }
 
     public void visit(ArrayLookup n) {
-
+        n.e1.accept(this);
+        push("%rax");
+        n.e2.accept(this);
+        pop("%rdx");
+        gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 
     public void visit(ArrayLength n) {
-
+        n.e.accept(this);
+        gen("movq", "(%rax)", "%rax");
     }
 
     public void visit(Call n) {
@@ -454,7 +459,22 @@ public class CodeGenerationVisitor implements Visitor{
     }
 
     public void visit(NewArray n) {
+        n.e.accept(this);
+        push("%rax");
+        // # of elements is initially stored in %rax, but we need space for n+1 elements
+        // (the first is used to store the size of the array)
+        gen("    incq    %rax");
 
+        // need 8 bytes per element
+        gen("shlq", "$2", "%rax");
+        push("%rax");
+
+        // allocate the space, addr of bytes returned in %rax
+        gen("    call    mjcalloc");
+
+        // move the size to the first pos
+        pop("%rdx");
+        gen("movq",  "%rdx", "(%rax)");
     }
 
     public void visit(NewObject n) {//store this
