@@ -9,6 +9,8 @@ class AccessControl {
 
 class Scaffold {
     public int test() {
+        boolean b;
+
         Employee employee;
         Guest guest;
         Guest contractor;
@@ -17,22 +19,22 @@ class Scaffold {
         guest = new Guest();
         contractor = new Contractor();
 
-        employee.create(1);
-        guest.create(2, 2);
-        contractor.create(3, 4);
+        b = employee.create(1);
+        b = guest.create(2, 2);
+        b = contractor.create(3, 4);
 
-        employee.canOpen(4);
-        guest.canOpen(4);
-        contractor.canOpen(3);
+        b = employee.canOpen(4);
+        b = guest.canOpen(4);
+        b = contractor.canOpen(3);
 
-        employee.canOverride(30);
+        b = employee.canOverride(30);
 
-        employee.print();
-        guest.print();
-        contractor.print();
+        b = employee.print();
+        b = guest.print();
+        b = contractor.print();
 
-        guest.invalidate();
-        guest.canOpen(1);
+        b = guest.invalidate();
+        b = guest.canOpen(1);
 
         return 0;
     }

@@ -51,7 +51,8 @@ public class CodeGenerationVisitor implements Visitor{
 
         for (String className : table.keySet()) {
             ClassNode parent = null;
-            if (table.get(className) instanceof ClassExtendedNode child) {
+            if (table.get(className) instanceof ClassExtendedNode) {
+                ClassExtendedNode child = (ClassExtendedNode) table.get(className);
                 parent = table.get(child.getExtendsName());
             }
             int objectSize = table.get(className).getFields().size();
