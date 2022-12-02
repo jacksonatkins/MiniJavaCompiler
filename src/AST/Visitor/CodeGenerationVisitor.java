@@ -227,7 +227,13 @@ public class CodeGenerationVisitor implements Visitor{
         gen(this.methodClass + "$" + n.i.s + ":");
         push("%rbp");
         gen("movq", "%rsp", "%rbp");
-        gen("subq", "$" + this.frameSize * 16, "%rsp");
+        int size = 8 * this.methodVariableOffsets.get(this.methodName).size();
+        if (size % 16 != 0) {
+            size += 8;
+        } //else if (size == 0) {
+          //  size = 16;
+        //}
+        gen("subq", "$" + size, "%rsp");
         this.currentSize = this.frameSize;
         this.frameSize += 1;
         for (int i = 0; i < n.fl.size(); i++) {
@@ -313,7 +319,7 @@ public class CodeGenerationVisitor implements Visitor{
             gen("movq", "%rax", (8 + offset) + "(%rdi)"); // Class Var
         } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.i.s)){
             offset = this.methodVariableOffsets.get(this.methodName).get(n.i.s);
-            gen("movq", "%rax", (-1 * (8 * this.currentSize) - offset) + "(%rbp)");
+            gen("movq", "%rax", ((-8 * this.currentSize) - offset) + "(%rbp)");
         } else {
             gen("movq", "%rax", this.parameterRegisters.get(this.methodName).get(n.i.s));
         }
@@ -432,10 +438,11 @@ public class CodeGenerationVisitor implements Visitor{
         push("%rdi"); // Save current rdi value
         gen("movq", "%rax", "%rdi"); // "this" pointer is first argument
         for (int i = 0; i < n.el.size(); i++) { // 2 parameters
-            push(this.registers.get(i));
+            //push(this.registers.get(i));
             toPop.push(this.registers.get(i));
             n.el.get(i).accept(this); // Puts it into rax
-            gen("movq", "%rax", this.registers.get(i)); // fill in parameters
+            //gen("movq", "%rax", this.registers.get(i)); // fill in parameters
+            push("%rax");
         }
         this.methodClass = savedClass;
         gen("movq", "0(%rdi)", "%rax");
@@ -447,10 +454,11 @@ public class CodeGenerationVisitor implements Visitor{
             }
         }
         gen("movq", offset + "(%rax)", "%rax");
-        gen("    call    *%rax");
         for (int i = 0; i < n.el.size(); i++) {
             pop(toPop.pop());
         }
+        gen("    call    *%rax");
+
         pop("%rdi");
     }
 
@@ -474,7 +482,7 @@ public class CodeGenerationVisitor implements Visitor{
             gen("movq", (8 + offset) + "(%rdi)", "%rax");
         } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.s)) {
             offset = this.methodVariableOffsets.get(this.methodName).get(n.s);
-            gen("movq", (-1 * (8 * this.currentSize) - offset) + "(%rbp)", "%rax");
+            gen("movq", ((-8 * this.currentSize) - offset) + "(%rbp)", "%rax");
         }
         else {
             gen("movq", this.parameterRegisters.get(this.methodName).get(n.s), "%rax");
