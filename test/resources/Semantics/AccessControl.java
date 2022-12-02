@@ -3,7 +3,38 @@
 
 class AccessControl {
     public static void main(String[] args) {
-        System.out.println(0);
+        System.out.println(new Scaffold().test());
+    }
+}
+
+class Scaffold {
+    public int test() {
+        Employee employee;
+        Guest guest;
+        Guest contractor;
+
+        employee = new Employee();
+        guest = new Guest();
+        contractor = new Contractor();
+
+        employee.create(1);
+        guest.create(2, 2);
+        contractor.create(3, 4);
+
+        employee.canOpen(4);
+        guest.canOpen(4);
+        contractor.canOpen(3);
+
+        employee.canOverride(30);
+
+        employee.print();
+        guest.print();
+        contractor.print();
+
+        guest.invalidate();
+        guest.canOpen(1);
+
+        return 0;
     }
 }
 
@@ -84,6 +115,16 @@ class Guest extends Person {
             isValid = !isValid;
         } else { }
 
+        return true;
+    }
+
+    public boolean print() {
+        return false;
+    }
+}
+
+class Contractor extends Guest {
+    public boolean print() {
         return true;
     }
 }
