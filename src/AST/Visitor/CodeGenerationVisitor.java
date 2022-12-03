@@ -364,9 +364,10 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(ArrayAssign n) { // i[e1] = e2;
         n.e1.accept(this); // Index
-        push("%rax");
+        //push("%rax");
+        gen("movq", "%rax", "%rdx");
         n.e2.accept(this); // Value
-        pop("%rdx"); // rdx = e1, rax = e2
+        //pop("%rdx"); // rdx = e1, rax = e2
         int offset;
         gen("    # " + n.i.s);
         if (this.classVariableOffsets.get(this.methodClass).containsKey(n.i.s)) {
@@ -455,7 +456,7 @@ public class CodeGenerationVisitor implements Visitor{
         n.e1.accept(this);
         push("%rax");
         n.e2.accept(this);
-        pop("%rdx");
+        pop("%rdx"); // rdx = i, rax = addr of array
         gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 
@@ -554,9 +555,11 @@ public class CodeGenerationVisitor implements Visitor{
 
         // need 8 bytes per element
         gen("shlq", "$3", "%rax");
+        push("%rdi");
         gen("movq", "%rax", "%rdi");
         // allocate the space, addr of bytes returned in %rax
         gen("    call    mjcalloc");
+        pop("%rdi");
         pop("%rdx");
         gen("movq", "%rdx", "0(%rax)");
     }
