@@ -231,6 +231,7 @@ public class CodeGenerationVisitor implements Visitor{
         this.methodClass = n.i.s;
         //this.vTable.put(n.i.s, new HashMap<>()); // Add class to vTable
         // String formatting for the method vtable
+        this.currentSize += 1;
         String className = String.format("%s$$:", n.i.s);
         int space = className.length() + 2;
         this.data.add(className + "  .quad 0");
@@ -243,12 +244,13 @@ public class CodeGenerationVisitor implements Visitor{
             // Visits method
             n.ml.get(i).accept(this);
         }
+        this.currentSize -= 1;
         this.data.add("");
     }
 
     public void visit(ClassDeclExtends n) {
         this.methodClass = n.i.s;
-
+        this.currentSize += 1;
         String className = String.format("%s$$:", n.i.s);
         int space = className.length() + 2;
         this.data.add(className + "  .quad " + n.j.s + "$$");
@@ -264,7 +266,7 @@ public class CodeGenerationVisitor implements Visitor{
                 idx += 1;
             }
         }
-
+        this.currentSize -= 1;
         this.data.add("");
     }
 
@@ -467,8 +469,11 @@ public class CodeGenerationVisitor implements Visitor{
     public void visit(ArrayLookup n) {
         n.e1.accept(this);
         push("%rax");
+        this.currentSize += 1;
+        //gen("movq", "%rax", "%rdx");
         n.e2.accept(this);
-        pop("%rdx");
+        pop("%rdx"); // rdx = i, rax = addr of array
+        this.currentSize -= 1;
         gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 

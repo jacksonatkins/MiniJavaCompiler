@@ -3,6 +3,7 @@ import AST.Statement;
 import AST.Visitor.*;
 import Parser.*;
 import Scanner.*;
+
 import java.io.*;
 import java.util.EnumSet;
 import java.util.List;
@@ -35,13 +36,17 @@ public class MiniJava {
                     }
 
                     switch (Character.toUpperCase(arg.charAt(1))) {
-                        case 'S': flags.add(Flag.S);
+                        case 'S':
+                            flags.add(Flag.S);
                             break;
-                        case 'A': flags.add(Flag.A);
+                        case 'A':
+                            flags.add(Flag.A);
                             break;
-                        case 'P': flags.add(Flag.P);
+                        case 'P':
+                            flags.add(Flag.P);
                             break;
-                        case 'T': flags.add(Flag.T);
+                        case 'T':
+                            flags.add(Flag.T);
                             break;
                         default:
                             System.err.println("Unknown flag '" +
@@ -78,43 +83,41 @@ public class MiniJava {
                 System.err.println("Error occurred during scanning, exiting...");
                 System.exit(1);
             }
-            //if (flags.contains(Flag.A) || flags.contains(Flag.P) || flags.contains(Flag.T)) {
-                // If the user passes S and A/P, we reset the scanner to allow the tokens to be printed and pass the
-                // tokens to the parser
-                if (flags.contains(Flag.S)) {
-                    f = new File(path);
-                    in = new FileReader(f);
-                    sf = new ComplexSymbolFactory();
-                    s = new scanner(in, sf);
-                }
+            // If the user passes S and A/P, we reset the scanner to allow the tokens to be printed and pass the
+            // tokens to the parser
+            if (flags.contains(Flag.S)) {
+                f = new File(path);
+                in = new FileReader(f);
+                sf = new ComplexSymbolFactory();
+                s = new scanner(in, sf);
+            }
 
-                parser p = new parser(s, sf);
-                Symbol root;
-                root = p.parse();
-                Program program = (Program) root.value;
+            parser p = new parser(s, sf);
+            Symbol root;
+            root = p.parse();
+            Program program = (Program) root.value;
 
-                // Allows user to pass both parsing flags to see both trees
-                if (flags.contains(Flag.A)) {
-                    program.accept(new UglyPrintVisitor());
-                    System.out.println("\n");
-                }
-                if (flags.contains(Flag.P)) {
-                    program.accept(new PrettyPrintVisitor());
-                    System.out.print("\n");
-                }
-                if (flags.contains(Flag.T)) {
-                    program.accept(new TestVisitor());
-                    System.out.println("\n");
-                    System.exit(program.getExitValue());
-                }
-                CodeGenerationVisitor c = new CodeGenerationVisitor(new TypeVisitor());
-                program.accept(c);
-                for (String line : c.getCode()) {
-                    System.out.println(line);
-                }
+            // Allows user to pass both parsing flags to see both trees
+            if (flags.contains(Flag.A)) {
+                program.accept(new UglyPrintVisitor());
+                System.out.println("\n");
+            }
+            if (flags.contains(Flag.P)) {
+                program.accept(new PrettyPrintVisitor());
+                System.out.print("\n");
+            }
+            if (flags.contains(Flag.T)) {
+                program.accept(new TestVisitor());
                 System.out.println("\n");
                 System.exit(program.getExitValue());
-            //}
+            }
+            CodeGenerationVisitor c = new CodeGenerationVisitor(new TypeVisitor());
+            program.accept(c);
+            for (String line : c.getCode()) {
+                System.out.println(line);
+            }
+            System.out.println("\n");
+            System.exit(program.getExitValue());
             System.exit(0);
         } catch (Exception e) {
             System.err.println("Unexpected internal compiler error: " +
