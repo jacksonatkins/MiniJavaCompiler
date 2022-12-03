@@ -279,9 +279,9 @@ public class CodeGenerationVisitor implements Visitor{
         push("%rbp");
         gen("movq", "%rsp", "%rbp");
         int size = 8 * this.methodVariableOffsets.get(this.methodName).size();
-        if (size % 16 != 0) {
-            size += 8;
-        }
+        //if (size % 16 != 0) {
+        //    size += 8;
+        //}
         gen("subq", "$" + size, "%rsp");
         this.currentSize = this.frameSize;
         this.frameSize += 1;
@@ -380,10 +380,12 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(ArrayAssign n) { // i[e1] = e2;
         n.e1.accept(this); // Index
-        //push("%rax");
-        gen("movq", "%rax", "%rdx");
+        push("%rax");
+        this.currentSize += 1;
+        //gen("movq", "%rax", "%rdx");
         n.e2.accept(this); // Value
-        //pop("%rdx"); // rdx = e1, rax = e2
+        pop("%rdx"); // rdx = e1, rax = e2
+        this.currentSize -= 1;
         int offset;
         gen("    # " + n.i.s);
         if (this.classVariableOffsets.get(this.methodClass).containsKey(n.i.s)) {
@@ -396,10 +398,12 @@ public class CodeGenerationVisitor implements Visitor{
         } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.i.s)) {
             offset = this.methodVariableOffsets.get(this.methodName).get(n.i.s);
             push("%rcx");
+            //this.currentSize += 1;
             gen("movq", ((-8 * this.currentSize) - offset) + "(%rbp)", "%rcx"); // gets address of array
             // (rcx, rdx, 8) is address of the element!
             gen("movq", "%rax", "8(%rcx,%rdx,8)");
             pop("%rcx");
+            //this.currentSize -= 1;
         } else {
             gen("movq", "%rax", "8(" + this.parameterRegisters.get(this.methodName).get(n.i.s) + ",%rdx,8)");
         }
@@ -470,12 +474,24 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(ArrayLookup n) {
         n.e1.accept(this);
+        if (n.e1 instanceof IdentifierExp) {
+            IdentifierExp test = (IdentifierExp) n.e1;
+            if (this.classVariableOffsets.get(this.methodClass).containsKey(test.s)) {
+                this.currentSize += 1;
+            }
+        }
         push("%rax");
-        this.currentSize += 1;
+        //this.currentSize += 1;
         //gen("movq", "%rax", "%rdx");
         n.e2.accept(this);
         pop("%rdx"); // rdx = i, rax = addr of array
-        this.currentSize -= 1;
+        //this.currentSize -= 1;
+        if (n.e1 instanceof IdentifierExp) {
+            IdentifierExp test = (IdentifierExp) n.e1;
+            if (this.classVariableOffsets.get(this.methodClass).containsKey(test.s)) {
+                this.currentSize -= 1;
+            }
+        }
         gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 
@@ -487,43 +503,53 @@ public class CodeGenerationVisitor implements Visitor{
     public void visit(Call n) {
         n.e.accept(this); // leave the pointer in %rax
         if (n.e instanceof NewObject) {
-            this.methodClass = ((NewObject)n.e).i.s;
+            this.methodClass = this.lastType;
         }
         String savedClass = this.methodClass;
+        String savedType = this.lastType;
         Stack<String> popEL = new Stack<>();
         Stack<String> popEnd = new Stack<>();
         push("%rdi"); // Save current rdi value
+        //this.currentSize += 1;
         for (int i = 0; i < n.el.size(); i++) {
             popEnd.push(this.registers.get(i));
             push(this.registers.get(i));
+            //this.currentSize += 1;
         }
         gen("movq", "%rax", "%rdi"); // "this" pointer is first argument
         for (int i = 0; i < n.el.size(); i++) { // 2 parameters
             popEL.push(this.registers.get(i));
             n.el.get(i).accept(this); // Puts it into rax
             push("%rax");
+            //this.currentSize += 1;
         }
-        if (this.lastType != null) {
-            this.methodClass = this.lastType;
-        }
+        this.lastType = savedType;
+        this.methodClass = this.lastType;
         gen("movq", "0(%rdi)", "%rax");
         int offset = 0;
+        //this.methodClass = !this.lastType.equals(savedClass) ? this.lastType : savedClass;
         for (int i = 0; i < this.vtables.get(this.methodClass).size(); i++) {
             if (this.vtables.get(this.methodClass).get(i).identifier.equals(n.i.s)) {
                 offset = this.vtables.get(this.methodClass).get(i).offset;
                 break;
             }
         }
-        this.methodClass = savedClass;
+        //if (!this.methodClass.equals(this.lastType)) {
+            this.methodClass = savedClass;
+        //}
         gen("movq", offset + "(%rax)", "%rax");
         for (int i = 0; i < n.el.size(); i++) {
             pop(popEL.pop());
+            //this.currentSize -= 1;
         }
         gen("    call    *%rax");
         for (int i = 0; i < n.el.size(); i++) {
             pop(popEnd.pop());
+            //this.currentSize -= 1;
         }
         pop("%rdi");
+        //this.currentSize -= 1;
+        this.methodClass = savedClass;
     }
 
     public void visit(IntegerLiteral n) {
@@ -544,10 +570,10 @@ public class CodeGenerationVisitor implements Visitor{
         if (this.classVariableOffsets.get(this.methodClass).containsKey(n.s)) {
             offset = this.classVariableOffsets.get(this.methodClass).get(n.s);
             gen("movq", (8 + offset) + "(%rdi)", "%rax");
-            //Node variable = tv.symbolTable().get(this.methodClass).getFields().get(n.s);
-            //if (variable.idType() != null) {
-            //    this.lastType = variable.idType();
-            //}
+            Node variable = tv.symbolTable().get(this.methodClass).getFields().get(n.s);
+            if (variable != null && variable.idType() != null) {
+                this.lastType = variable.idType();
+            }
         } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.s)) {
             offset = this.methodVariableOffsets.get(this.methodName).get(n.s);
             gen("movq", ((-8 * this.currentSize) - offset) + "(%rbp)", "%rax");
