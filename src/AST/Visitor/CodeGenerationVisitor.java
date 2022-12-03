@@ -16,6 +16,7 @@ public class CodeGenerationVisitor implements Visitor{
     private String lastType;
 
     private Map<String, List<Method>> vtables;
+    private Map<String, Integer> sizeMap;
     private Map<String, Integer> objectSizes;
     private Map<String, Map<String, Integer>> methodVariableOffsets;
     private Map<String, Map<String, Integer>> classVariableOffsets;
@@ -34,6 +35,7 @@ public class CodeGenerationVisitor implements Visitor{
         this.code = new ArrayList<>();
         this.data = new ArrayList<>();
         this.vtables = new HashMap<>();
+        this.sizeMap = new HashMap<>();
         this.objectSizes = new HashMap<>();
         this.methodVariableOffsets = new HashMap<>();
         this.classVariableOffsets = new HashMap<>();
@@ -50,13 +52,15 @@ public class CodeGenerationVisitor implements Visitor{
         int localOffset = 0;
         int classOffset = 0;
 
+        System.out.println(this.sizeMap);
+
         for (String className : table.keySet()) {
             ClassNode parent = null;
             if (table.get(className) instanceof ClassExtendedNode) {
                 ClassExtendedNode child = (ClassExtendedNode) table.get(className);
                 parent = table.get(child.getExtendsName());
             }
-            int objectSize = table.get(className).getFields().size();
+            int objectSize = sizeMap.get(className);
             objectSize = parent != null ? objectSize + table.get(parent.name).getFields().size() : 0;
             this.objectSizes.put(className, 8 * objectSize);
             this.classVariableOffsets.put(className, new HashMap<>());
@@ -115,6 +119,7 @@ public class CodeGenerationVisitor implements Visitor{
     public void vtables(Map<String, ClassNode> symbolTable, Map<String, Dependency> dependencyGraph) {
         for (String symbol : symbolTable.keySet()) {
             vtable(symbol, dependencyGraph);
+            sizeMap.put(symbol, classSize(symbol, dependencyGraph));
         }
     }
 
@@ -162,6 +167,13 @@ public class CodeGenerationVisitor implements Visitor{
         return vtable;
     }
 
+    private int classSize(String classIdentifier, Map<String, Dependency> dependencyGraph) {
+        if (classIdentifier == null) {
+            return 0;
+        }
+
+        return dependencyGraph.get(classIdentifier).fields.size() + classSize(dependencyGraph.get(classIdentifier).dependencies, dependencyGraph);
+    }
 
     public void visit(Display n) {
 
@@ -456,7 +468,7 @@ public class CodeGenerationVisitor implements Visitor{
         n.e1.accept(this);
         push("%rax");
         n.e2.accept(this);
-        pop("%rdx"); // rdx = i, rax = addr of array
+        pop("%rdx");
         gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 
