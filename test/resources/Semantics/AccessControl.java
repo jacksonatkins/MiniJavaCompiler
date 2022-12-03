@@ -9,7 +9,7 @@ class AccessControl {
 
 class Scaffold {
     public int test() {
-        boolean b;
+        int b;
 
         Employee employee;
         Guest guest;
@@ -19,24 +19,43 @@ class Scaffold {
         guest = new Guest();
         contractor = new Contractor();
 
-        b = employee.create(1);
-        b = guest.create(2, 2);
-        b = contractor.create(3, 4);
+        //b = employee.create(1);
+        //b = employee.canOverride(30);
 
+        b = employee.create(10);
+        System.out.println(b); // 1
+        b = guest.create(2, 2);
+        System.out.println(b); // 1
+        b = contractor.create(3, 4);
+        System.out.println(b); // 1
         b = employee.canOpen(4);
+        System.out.println(b); // 1
         b = guest.canOpen(4);
+        System.out.println(b); // 0
         b = contractor.canOpen(3);
+        System.out.println(b); // 1
+        b = employee.canOverride(30);
+        System.out.println(b); // 0
+        b = employee.print(); // 10, 5
+        System.out.println(b); // 1
+        b = guest.print();
+        System.out.println(b); // 0
+        b = contractor.print();
+        System.out.println(b); // 1
+        b = guest.invalidate();
+        System.out.println(b); // 1
+        b = guest.canOpen(1);
+        System.out.println(b); // 0
+        /*
+
 
         b = employee.canOverride(30);
 
-        b = employee.print();
-        b = guest.print();
-        b = contractor.print();
 
         b = guest.invalidate();
-        b = guest.canOpen(1);
+        b = guest.canOpen(1);*/
 
-        return 0;
+        return b; // 0
     }
 }
 
@@ -47,28 +66,28 @@ class Person {
     int accessLevel;
     int[] overrideCodes;
 
-    public boolean canOpen(int requiredAccessLevel) {
-        boolean shouldOpen;
+    public int canOpen(int requiredAccessLevel) {
+        int shouldOpen;
 
         if (isValid && !(accessLevel < requiredAccessLevel)) {
-            shouldOpen = true;
+            shouldOpen = 1;
         } else {
-            shouldOpen = false;
+            shouldOpen = 0;
         }
 
         return shouldOpen;
     }
 
-    public boolean canOverride(int presentedOverrideCode) {
-        boolean shouldOverride;
+    public int canOverride(int presentedOverrideCode) {
+        int shouldOverride;
         int i;
 
-        shouldOverride = false;
+        shouldOverride = 0;
         i = 0;
 
         while (i < overrideCodes.length) {
             if (overrideCodes[i] < presentedOverrideCode) {
-                shouldOverride = true;
+                shouldOverride = 1;
             } else { }
 
             i = i + 1;
@@ -77,16 +96,16 @@ class Person {
         return shouldOverride;
     }
 
-    public boolean print() {
+    public int print() {
         System.out.println(id);
         System.out.println(accessLevel);
 
-        return true;
+        return 1;
     }
 }
 
 class Employee extends Person {
-    public boolean create(int userId) {
+    public int create(int userId) {
         isValid = true;
         temporary = false;
         id = userId;
@@ -97,36 +116,36 @@ class Employee extends Person {
         overrideCodes[1] = 29;
         overrideCodes[2] = 91;
 
-        return true;
+        return 1;
     }
 }
 
 class Guest extends Person {
-    public boolean create(int userId, int givenAccessLevel) {
+    public int create(int userId, int givenAccessLevel) {
         isValid = true;
         temporary = true;
         id = userId;
         accessLevel = givenAccessLevel;
         overrideCodes = new int[0];
 
-        return true;
+        return 1;
     }
 
-    public boolean invalidate() {
+    public int invalidate() {
         if (isValid) {
             isValid = !isValid;
         } else { }
 
-        return true;
+        return 1;
     }
 
-    public boolean print() {
-        return false;
+    public int print() {
+        return 0;
     }
 }
 
 class Contractor extends Guest {
-    public boolean print() {
-        return true;
+    public int print() {
+        return 1;
     }
 }

@@ -1,0 +1,10 @@
+We believe that all aspects of the MiniJava specification are implemented and functional in our compiler. We did not add
+any extensions not explicitly mentioned in the MiniJava specification.
+
+We corrected portions of the semantic analysis visitor that we had incorrectly implemented in the previous phase.
+Outside of this, we decided to reimplement our dependency checker from the ground up as a separate visitor, which we
+deemed necessary to properly build the vtables and to achieve O(1) dispatch timing. This proved to be useful, as it
+helped us later on in the phase as we were able to use it to allocate memory using the dependency graph as we tracked
+what fields were defined by a given class as well as those that it may have inherited from its parent class. This helped
+solve a serious issue we encountered where we were not allocating enough memory for each object, and as a result, were
+overwriting existing data in memory.

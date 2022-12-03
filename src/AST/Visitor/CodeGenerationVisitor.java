@@ -52,8 +52,6 @@ public class CodeGenerationVisitor implements Visitor{
         int localOffset = 0;
         int classOffset = 0;
 
-        System.out.println(this.sizeMap);
-
         for (String className : table.keySet()) {
             ClassNode parent = null;
             if (table.get(className) instanceof ClassExtendedNode) {
@@ -357,8 +355,12 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(Print n) {
         n.e.accept(this);
+        push("%rdi");
+        this.currentSize += 1;
         gen("movq", "%rax", "%rdi");
         gen("    call    put");
+        pop("%rdi");
+        this.currentSize -= 1;
     }
 
     public void visit(Assign n) {
