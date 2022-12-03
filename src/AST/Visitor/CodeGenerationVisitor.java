@@ -70,18 +70,21 @@ public class CodeGenerationVisitor implements Visitor{
 
                 Map<String, MethodNode> inherited = table.get(parent.name).getMethods();
                 for (String method : inherited.keySet()) {
-                    if (!this.methodVariableOffsets.containsKey(method)) {
+                    //if (!this.methodVariableOffsets.containsKey(method)) {
                         this.vtables.get(className).get(methodOffset - 1).setOffset(methodOffset * 8);
-                        this.methodVariableOffsets.put(method, new HashMap<>());
-
-                        Map<String, Node> localVars = inherited.get(method).getLocalVars();
-                        for (String var : localVars.keySet()) {
-                            this.methodVariableOffsets.get(method).put(var, localOffset * 8);
-                            localOffset += 1;
+                        if (!this.methodVariableOffsets.containsKey(method)) {
+                            this.methodVariableOffsets.put(method, new HashMap<>());
+                            Map<String, Node> localVars = inherited.get(method).getLocalVars();
+                            for (String var : localVars.keySet()) {
+                                this.methodVariableOffsets.get(method).put(var, localOffset * 8);
+                                localOffset += 1;
+                            }
                         }
                         localOffset = 0;
-                        methodOffset += 1;
-                    }
+                        if (!table.get(className).getMethods().containsKey(method)) {
+                            methodOffset += 1;
+                        }
+                    //}
                 }
             }
 
@@ -89,13 +92,12 @@ public class CodeGenerationVisitor implements Visitor{
                 this.classVariableOffsets.get(className).put(variableName, classOffset * 8);
                 classOffset += 1;
             }
-
             Map<String, MethodNode> methods = table.get(className).getMethods();
             for (String method : methods.keySet()) {
-                if (!this.methodVariableOffsets.containsKey(method)) {
+                //if (!this.methodVariableOffsets.containsKey(method)) {
                     this.vtables.get(className).get(methodOffset - 1).setOffset(methodOffset * 8);
-                    this.methodVariableOffsets.put(method, new HashMap<>());
 
+                    this.methodVariableOffsets.put(method, new HashMap<>());
                     Map<String, Node> localVars = methods.get(method).getLocalVars();
                     for (String var : localVars.keySet()) {
                         this.methodVariableOffsets.get(method).put(var, localOffset * 8);
@@ -103,7 +105,7 @@ public class CodeGenerationVisitor implements Visitor{
                     }
                     localOffset = 0;
                     methodOffset += 1;
-                }
+                //}
             }
             methodOffset = 1;
             classOffset = 0;
@@ -487,7 +489,6 @@ public class CodeGenerationVisitor implements Visitor{
         gen("movq", "0(%rdi)", "%rax");
         int offset = 0;
         for (int i = 0; i < this.vtables.get(this.methodClass).size(); i++) {
-            System.err.println(this.vtables.get(this.methodClass).get(i).implementorIdentifier);
             if (this.vtables.get(this.methodClass).get(i).identifier.equals(n.i.s)) {
                 offset = this.vtables.get(this.methodClass).get(i).offset;
                 break;
