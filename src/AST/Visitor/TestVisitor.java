@@ -165,7 +165,11 @@ public class TestVisitor implements Visitor{
         this.currentScope.putAll(((ClassNode) this.currentNode).getFields());
         for (String s : this.dependency.get(n.i.s)) {
             ClassNode c = this.table.get(s);
-            this.currentScope.putAll(c.getFields());
+            for (String field : c.getFields().keySet()) {
+                if (!this.currentScope.containsKey(field)) {
+                    this.currentScope.put(field, c.getFields().get(field));
+                }
+            }
         }
 
         // Search through the methods
@@ -385,6 +389,8 @@ public class TestVisitor implements Visitor{
         n.e.accept(this);
         NodeType right = this.currentType;
         if (right.equals(NodeType.CLASS)) {
+            rightNode = this.identifierNode;
+        } else if (right.equals(NodeType.IDENTIFIER)) {
             rightNode = this.identifierNode;
         }
         if (left.equals(NodeType.UNKNOWN) || right.equals(NodeType.UNKNOWN)) {
@@ -647,7 +653,11 @@ public class TestVisitor implements Visitor{
             }
         }
         if (!flag) {
-            this.currentType = calledMethod.getReturnType().getType();
+            if (calledMethod.getReturnType().getType().equals(NodeType.IDENTIFIER)) {
+                this.currentType = NodeType.CLASS;
+            } else {
+                this.currentType = calledMethod.getReturnType().getType();
+            }
         } else {
             this.currentType = NodeType.UNKNOWN;
         }
