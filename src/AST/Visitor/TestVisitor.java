@@ -14,6 +14,11 @@ public class TestVisitor implements Visitor{
     private Map<String, List<String>> dependency;
     private int exitValue;
     private Node identifierNode;
+    private boolean outputTable;
+
+    public TestVisitor(boolean shouldOutput) {
+        this.outputTable = shouldOutput;
+    }
 
     public void visit(Display n) {
 
@@ -23,7 +28,9 @@ public class TestVisitor implements Visitor{
         // Initialize the global symbol table
         TypeVisitor t = new TypeVisitor();
         n.accept(t);
-        t.showTable();
+        if (outputTable) {
+            t.showTable();
+        }
         this.table = t.symbolTable();
         Map<Integer, String> errors = t.returnErrors();
         n.exitValue = 0; // Initialize to no failure

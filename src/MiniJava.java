@@ -107,9 +107,11 @@ public class MiniJava {
                 System.out.print("\n");
             }
             if (flags.contains(Flag.T)) {
-                program.accept(new TestVisitor());
+                program.accept(new TestVisitor(true));
                 System.out.println("\n");
                 System.exit(program.getExitValue());
+            } else {
+                program.accept(new TestVisitor(false));
             }
             CodeGenerationVisitor c = new CodeGenerationVisitor(new TypeVisitor());
             program.accept(c);

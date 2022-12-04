@@ -44,7 +44,7 @@ public class TestSemantics {
             Program program = (Program) root.value;
             String expected = Files.readString(Paths.get(RESOURCE_DIR + testName + ".expected"));
 
-            program.accept(new TestVisitor());
+            program.accept(new TestVisitor(true));
             assertEquals(expected, err.toString());
         } catch (IOException e) {
             fail(e.getMessage());
