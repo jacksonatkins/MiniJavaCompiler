@@ -1,18 +1,19 @@
 package AST.Visitor;
 
 import AST.*;
+
 import java.util.*;
 
 import CodeGeneration.Dependency;
 import CodeGeneration.Method;
 import TypeNode.*;
 
-public class CodeGenerationVisitor implements Visitor{
+public class CodeGenerationVisitor implements Visitor {
     private List<String> code;
     private List<String> data;
 
-    private String methodClass;
-    private String methodName;
+    private String currentClass;
+    private String currentMethod;
     private String lastType;
 
     private Map<String, List<Method>> vtables;
@@ -24,13 +25,10 @@ public class CodeGenerationVisitor implements Visitor{
     private List<String> registers;
 
     private int labels;
-    private int frameSize;
-    private int currentSize;
     private TypeVisitor tv;
 
     public CodeGenerationVisitor(TypeVisitor t) {
         this.tv = t;
-        this.frameSize = 1;
         this.labels = 1;
         this.code = new ArrayList<>();
         this.data = new ArrayList<>();
@@ -72,21 +70,19 @@ public class CodeGenerationVisitor implements Visitor{
 
                 Map<String, MethodNode> inherited = table.get(parent.name).getMethods();
                 for (String method : inherited.keySet()) {
-                    //if (!this.methodVariableOffsets.containsKey(method)) {
-                        this.vtables.get(className).get(methodOffset - 1).setOffset(methodOffset * 8);
-                        if (!this.methodVariableOffsets.containsKey(method)) {
-                            this.methodVariableOffsets.put(method, new HashMap<>());
-                            Map<String, Node> localVars = inherited.get(method).getLocalVars();
-                            for (String var : localVars.keySet()) {
-                                this.methodVariableOffsets.get(method).put(var, localOffset * 8);
-                                localOffset += 1;
-                            }
+                    this.vtables.get(className).get(methodOffset - 1).setOffset(methodOffset * 8);
+                    if (!this.methodVariableOffsets.containsKey(method)) {
+                        this.methodVariableOffsets.put(method, new HashMap<>());
+                        Map<String, Node> localVars = inherited.get(method).getLocalVars();
+                        for (String var : localVars.keySet()) {
+                            this.methodVariableOffsets.get(method).put(var, localOffset * 8);
+                            localOffset += 1;
                         }
-                        localOffset = 0;
-                        if (!table.get(className).getMethods().containsKey(method)) {
-                            methodOffset += 1;
-                        }
-                    //}
+                    }
+                    localOffset = 0;
+                    if (!table.get(className).getMethods().containsKey(method)) {
+                        methodOffset += 1;
+                    }
                 }
             }
 
@@ -96,18 +92,16 @@ public class CodeGenerationVisitor implements Visitor{
             }
             Map<String, MethodNode> methods = table.get(className).getMethods();
             for (String method : methods.keySet()) {
-                //if (!this.methodVariableOffsets.containsKey(method)) {
-                    this.vtables.get(className).get(methodOffset - 1).setOffset(methodOffset * 8);
+                this.vtables.get(className).get(methodOffset - 1).setOffset(methodOffset * 8);
 
-                    this.methodVariableOffsets.put(method, new HashMap<>());
-                    Map<String, Node> localVars = methods.get(method).getLocalVars();
-                    for (String var : localVars.keySet()) {
-                        this.methodVariableOffsets.get(method).put(var, localOffset * 8);
-                        localOffset += 1;
-                    }
-                    localOffset = 0;
-                    methodOffset += 1;
-                //}
+                this.methodVariableOffsets.put(method, new HashMap<>());
+                Map<String, Node> localVars = methods.get(method).getLocalVars();
+                for (String var : localVars.keySet()) {
+                    this.methodVariableOffsets.get(method).put(var, localOffset * 8);
+                    localOffset += 1;
+                }
+                localOffset = 0;
+                methodOffset += 1;
             }
             methodOffset = 1;
             classOffset = 0;
@@ -226,10 +220,8 @@ public class CodeGenerationVisitor implements Visitor{
     }
 
     public void visit(ClassDeclSimple n) {
-        this.methodClass = n.i.s;
-        //this.vTable.put(n.i.s, new HashMap<>()); // Add class to vTable
+        this.currentClass = n.i.s;
         // String formatting for the method vtable
-        this.currentSize += 1;
         String className = String.format("%s$$:", n.i.s);
         int space = className.length() + 2;
         this.data.add(className + "  .quad 0");
@@ -242,13 +234,11 @@ public class CodeGenerationVisitor implements Visitor{
             // Visits method
             n.ml.get(i).accept(this);
         }
-        this.currentSize -= 1;
         this.data.add("");
     }
 
     public void visit(ClassDeclExtends n) {
-        this.methodClass = n.i.s;
-        this.currentSize += 1;
+        this.currentClass = n.i.s;
         String className = String.format("%s$$:", n.i.s);
         int space = className.length() + 2;
         this.data.add(className + "  .quad " + n.j.s + "$$");
@@ -264,7 +254,6 @@ public class CodeGenerationVisitor implements Visitor{
                 idx += 1;
             }
         }
-        this.currentSize -= 1;
         this.data.add("");
     }
 
@@ -274,17 +263,12 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(MethodDecl n) {
         this.parameterRegisters.put(n.i.s, new HashMap<>());
-        this.methodName = n.i.s;
-        gen(this.methodClass + "$" + n.i.s + ":");
+        this.currentMethod = n.i.s;
+        gen(this.currentClass + "$" + n.i.s + ":");
         push("%rbp");
         gen("movq", "%rsp", "%rbp");
-        int size = 8 * this.methodVariableOffsets.get(this.methodName).size();
-        //if (size % 16 != 0) {
-        //    size += 8;
-        //}
+        int size = 8 * this.methodVariableOffsets.get(this.currentMethod).size();
         gen("subq", "$" + size, "%rsp");
-        this.currentSize = this.frameSize;
-        this.frameSize += 1;
         for (int i = 0; i < n.fl.size(); i++) {
             this.parameterRegisters.get(n.i.s).put(n.fl.get(i).i.s, this.registers.get(i));
         }
@@ -356,56 +340,54 @@ public class CodeGenerationVisitor implements Visitor{
     public void visit(Print n) {
         n.e.accept(this);
         push("%rdi");
-        this.currentSize += 1;
         gen("movq", "%rax", "%rdi");
         gen("    call    put");
         pop("%rdi");
-        this.currentSize -= 1;
     }
 
     public void visit(Assign n) {
         n.e.accept(this);
         int offset;
         gen("    # " + n.i.s);
-        if (this.classVariableOffsets.get(this.methodClass).containsKey(n.i.s)) {
-            offset = this.classVariableOffsets.get(this.methodClass).get(n.i.s);
+        if (this.classVariableOffsets.get(this.currentClass).containsKey(n.i.s)) {
+            offset = this.classVariableOffsets.get(this.currentClass).get(n.i.s);
             gen("movq", "%rax", (8 + offset) + "(%rdi)"); // Class Var
-        } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.i.s)){
-            offset = this.methodVariableOffsets.get(this.methodName).get(n.i.s);
-            gen("movq", "%rax", ((-8 * this.currentSize) - offset) + "(%rbp)");
+        } else if (this.methodVariableOffsets.get(this.currentMethod).containsKey(n.i.s)) {
+            offset = this.methodVariableOffsets.get(this.currentMethod).get(n.i.s);
+            gen("movq", "%rax", (-8 - offset) + "(%rbp)");
         } else {
-            gen("movq", "%rax", this.parameterRegisters.get(this.methodName).get(n.i.s));
+            gen("movq", "%rax", this.parameterRegisters.get(this.currentMethod).get(n.i.s));
         }
     }
 
     public void visit(ArrayAssign n) { // i[e1] = e2;
         n.e1.accept(this); // Index
         push("%rax");
-        this.currentSize += 1;
+        //this.currentSize += 1;
         //gen("movq", "%rax", "%rdx");
         n.e2.accept(this); // Value
         pop("%rdx"); // rdx = e1, rax = e2
-        this.currentSize -= 1;
+        //this.currentSize -= 1;
         int offset;
         gen("    # " + n.i.s);
-        if (this.classVariableOffsets.get(this.methodClass).containsKey(n.i.s)) {
-            offset = this.classVariableOffsets.get(this.methodClass).get(n.i.s);
+        if (this.classVariableOffsets.get(this.currentClass).containsKey(n.i.s)) {
+            offset = this.classVariableOffsets.get(this.currentClass).get(n.i.s);
             push("%rcx");
             gen("movq", (8 + offset) + "(%rdi)", "%rcx");
             // (rcx, rdx, 8) is address of the element!
             gen("movq", "%rax", "8(%rcx,%rdx,8)");
             pop("%rcx");
-        } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.i.s)) {
-            offset = this.methodVariableOffsets.get(this.methodName).get(n.i.s);
+        } else if (this.methodVariableOffsets.get(this.currentMethod).containsKey(n.i.s)) {
+            offset = this.methodVariableOffsets.get(this.currentMethod).get(n.i.s);
             push("%rcx");
             //this.currentSize += 1;
-            gen("movq", ((-8 * this.currentSize) - offset) + "(%rbp)", "%rcx"); // gets address of array
+            gen("movq", (-8 - offset) + "(%rbp)", "%rcx"); // gets address of array
             // (rcx, rdx, 8) is address of the element!
             gen("movq", "%rax", "8(%rcx,%rdx,8)");
             pop("%rcx");
             //this.currentSize -= 1;
         } else {
-            gen("movq", "%rax", "8(" + this.parameterRegisters.get(this.methodName).get(n.i.s) + ",%rdx,8)");
+            gen("movq", "%rax", "8(" + this.parameterRegisters.get(this.currentMethod).get(n.i.s) + ",%rdx,8)");
         }
     }
 
@@ -474,24 +456,9 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(ArrayLookup n) {
         n.e1.accept(this);
-        if (n.e1 instanceof IdentifierExp) {
-            IdentifierExp test = (IdentifierExp) n.e1;
-            if (this.classVariableOffsets.get(this.methodClass).containsKey(test.s)) {
-                this.currentSize += 1;
-            }
-        }
         push("%rax");
-        //this.currentSize += 1;
-        //gen("movq", "%rax", "%rdx");
         n.e2.accept(this);
         pop("%rdx"); // rdx = i, rax = addr of array
-        //this.currentSize -= 1;
-        if (n.e1 instanceof IdentifierExp) {
-            IdentifierExp test = (IdentifierExp) n.e1;
-            if (this.classVariableOffsets.get(this.methodClass).containsKey(test.s)) {
-                this.currentSize -= 1;
-            }
-        }
         gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 
@@ -503,53 +470,44 @@ public class CodeGenerationVisitor implements Visitor{
     public void visit(Call n) {
         n.e.accept(this); // leave the pointer in %rax
         if (n.e instanceof NewObject) {
-            this.methodClass = this.lastType;
+            this.currentClass = this.lastType;
         }
-        String savedClass = this.methodClass;
+        String savedClass = this.currentClass;
         String savedType = this.lastType;
         Stack<String> popEL = new Stack<>();
         Stack<String> popEnd = new Stack<>();
         push("%rdi"); // Save current rdi value
-        //this.currentSize += 1;
         for (int i = 0; i < n.el.size(); i++) {
             popEnd.push(this.registers.get(i));
             push(this.registers.get(i));
-            //this.currentSize += 1;
         }
         gen("movq", "%rax", "%rdi"); // "this" pointer is first argument
         for (int i = 0; i < n.el.size(); i++) { // 2 parameters
             popEL.push(this.registers.get(i));
             n.el.get(i).accept(this); // Puts it into rax
             push("%rax");
-            //this.currentSize += 1;
         }
         this.lastType = savedType;
-        this.methodClass = this.lastType;
+        this.currentClass = this.lastType;
         gen("movq", "0(%rdi)", "%rax");
         int offset = 0;
-        //this.methodClass = !this.lastType.equals(savedClass) ? this.lastType : savedClass;
-        for (int i = 0; i < this.vtables.get(this.methodClass).size(); i++) {
-            if (this.vtables.get(this.methodClass).get(i).identifier.equals(n.i.s)) {
-                offset = this.vtables.get(this.methodClass).get(i).offset;
+        for (int i = 0; i < this.vtables.get(this.currentClass).size(); i++) {
+            if (this.vtables.get(this.currentClass).get(i).identifier.equals(n.i.s)) {
+                offset = this.vtables.get(this.currentClass).get(i).offset;
                 break;
             }
         }
-        //if (!this.methodClass.equals(this.lastType)) {
-            this.methodClass = savedClass;
-        //}
+        this.currentClass = savedClass;
         gen("movq", offset + "(%rax)", "%rax");
         for (int i = 0; i < n.el.size(); i++) {
             pop(popEL.pop());
-            //this.currentSize -= 1;
         }
         gen("    call    *%rax");
         for (int i = 0; i < n.el.size(); i++) {
             pop(popEnd.pop());
-            //this.currentSize -= 1;
         }
         pop("%rdi");
-        //this.currentSize -= 1;
-        this.methodClass = savedClass;
+        this.currentClass = savedClass;
     }
 
     public void visit(IntegerLiteral n) {
@@ -567,23 +525,22 @@ public class CodeGenerationVisitor implements Visitor{
     public void visit(IdentifierExp n) {
         int offset;
         gen("    # " + n.s);
-        if (this.classVariableOffsets.get(this.methodClass).containsKey(n.s)) {
-            offset = this.classVariableOffsets.get(this.methodClass).get(n.s);
+        if (this.classVariableOffsets.get(this.currentClass).containsKey(n.s)) {
+            offset = this.classVariableOffsets.get(this.currentClass).get(n.s);
             gen("movq", (8 + offset) + "(%rdi)", "%rax");
-            Node variable = tv.symbolTable().get(this.methodClass).getFields().get(n.s);
+            Node variable = tv.symbolTable().get(this.currentClass).getFields().get(n.s);
             if (variable != null && variable.idType() != null) {
                 this.lastType = variable.idType();
             }
-        } else if (this.methodVariableOffsets.get(this.methodName).containsKey(n.s)) {
-            offset = this.methodVariableOffsets.get(this.methodName).get(n.s);
-            gen("movq", ((-8 * this.currentSize) - offset) + "(%rbp)", "%rax");
-            Node variable = tv.symbolTable().get(this.methodClass).getMethods().get(this.methodName).getLocalVars().get(n.s);
+        } else if (this.methodVariableOffsets.get(this.currentMethod).containsKey(n.s)) {
+            offset = this.methodVariableOffsets.get(this.currentMethod).get(n.s);
+            gen("movq", (-8 - offset) + "(%rbp)", "%rax");
+            Node variable = tv.symbolTable().get(this.currentClass).getMethods().get(this.currentMethod).getLocalVars().get(n.s);
             if (variable.idType() != null) {
                 this.lastType = variable.idType();
             }
-        }
-        else {
-            gen("movq", this.parameterRegisters.get(this.methodName).get(n.s), "%rax");
+        } else {
+            gen("movq", this.parameterRegisters.get(this.currentMethod).get(n.s), "%rax");
         }
     }
 
@@ -592,7 +549,7 @@ public class CodeGenerationVisitor implements Visitor{
     }
 
     public void visit(NewArray n) {
-        n.e.accept(this); // 5 goes into rax?
+        n.e.accept(this);
         push("%rax");
         // # of elements is initially stored in %rax, but we need space for n+1 elements
         // (the first is used to store the size of the array)
@@ -611,7 +568,7 @@ public class CodeGenerationVisitor implements Visitor{
 
     public void visit(NewObject n) {//store this
         push("%rdi");
-        gen("movq", "$"  + (8 + this.objectSizes.get(n.i.s)), "%rdi");
+        gen("movq", "$" + (8 + this.objectSizes.get(n.i.s)), "%rdi");
         gen("    call    mjcalloc"); // addr of allocated bytes returned to %rax
         gen("leaq", n.i.s + "$$(%rip)", "%rdx");
         gen("movq", "%rdx", "(%rax)");

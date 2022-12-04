@@ -160,6 +160,11 @@ white = {eol}|[ \t]
 "else" { return symbol(sym.ELSE); }
 "while" { return symbol(sym.WHILE); }
 
+/* identifiers */
+{letter} ({letter}|{digit}|{zero}|_)* {
+  return symbol(sym.IDENTIFIER, yytext());
+}
+
 /* literal */
 {digit} ({digit} | {zero})* {
     return symbol(sym.DIGIT, yytext());
@@ -167,11 +172,6 @@ white = {eol}|[ \t]
 
 {zero} {
     return symbol(sym.DIGIT, yytext());
-}
-
-/* identifiers */
-{letter} ({letter}|{digit}|_)* {
-  return symbol(sym.IDENTIFIER, yytext());
 }
 
 /* comments */
