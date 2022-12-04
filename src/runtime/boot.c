@@ -37,6 +37,13 @@ void * mjcalloc(size_t num_bytes) {
   return (calloc(1, num_bytes));
 }
 
+void arrayCheck(int64_t idx, int64_t size) {
+    if (idx >= size || idx < 0) {
+        fprintf(stderr, "Array index out of bounds. Index: %" PRId64 ", Size: %" PRId64 "\n", idx, size);
+        exit(1);
+    }
+}
+
 /* Execute compiled program asm_main */
 int main() {
   asm_main();

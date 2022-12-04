@@ -109,7 +109,6 @@ public class MiniJava {
             if (flags.contains(Flag.T)) {
                 program.accept(new TestVisitor(true));
                 System.out.println("\n");
-                System.exit(program.getExitValue());
             } else {
                 program.accept(new TestVisitor(false));
             }
@@ -120,7 +119,6 @@ public class MiniJava {
             }
             System.out.println("\n");
             System.exit(program.getExitValue());
-            System.exit(0);
         } catch (Exception e) {
             System.err.println("Unexpected internal compiler error: " +
                     e);

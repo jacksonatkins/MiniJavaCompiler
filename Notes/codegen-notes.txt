@@ -8,3 +8,7 @@ helped us later on in the phase as we were able to use it to allocate memory usi
 what fields were defined by a given class as well as those that it may have inherited from its parent class. This helped
 solve a serious issue we encountered where we were not allocating enough memory for each object, and as a result, were
 overwriting existing data in memory.
+
+We were not able to get correct code generation for LinkedList.java and TreeVisitor.java. After working for around 20 hours
+before 12/3, we put in 10 hours of work, allowing us to fix many problems we had. However, we did not have time to fix
+these errors. Not due the time constraint, but rather due to the fact that we are both mentally exhausted.
