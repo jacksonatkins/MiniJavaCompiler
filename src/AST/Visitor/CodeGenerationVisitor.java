@@ -57,8 +57,8 @@ public class CodeGenerationVisitor implements Visitor {
                 parent = table.get(child.getExtendsName());
             }
             int objectSize = sizeMap.get(className);
-            objectSize = parent != null ? objectSize + table.get(parent.name).getFields().size() : 0;
-            this.objectSizes.put(className, 8 * objectSize);
+            objectSize = parent != null ? objectSize + table.get(parent.name).getFields().size() : objectSize;
+            this.objectSizes.put(className, 8 + 8 * objectSize);
             this.classVariableOffsets.put(className, new HashMap<>());
 
             // if extended class, add parent instance variables and methods
@@ -340,8 +340,10 @@ public class CodeGenerationVisitor implements Visitor {
     public void visit(Print n) {
         n.e.accept(this);
         push("%rdi");
+        push("%rsi");
         gen("movq", "%rax", "%rdi");
         gen("    call    put");
+        pop("%rsi");
         pop("%rdi");
     }
 
@@ -363,29 +365,38 @@ public class CodeGenerationVisitor implements Visitor {
     public void visit(ArrayAssign n) { // i[e1] = e2;
         n.e1.accept(this); // Index
         push("%rax");
-        //this.currentSize += 1;
-        //gen("movq", "%rax", "%rdx");
         n.e2.accept(this); // Value
         pop("%rdx"); // rdx = e1, rax = e2
-        //this.currentSize -= 1;
         int offset;
         gen("    # " + n.i.s);
         if (this.classVariableOffsets.get(this.currentClass).containsKey(n.i.s)) {
             offset = this.classVariableOffsets.get(this.currentClass).get(n.i.s);
             push("%rcx");
+            push("%rdi");
+            push("%rsi");
             gen("movq", (8 + offset) + "(%rdi)", "%rcx");
+            gen("movq", "%rdx", "%rdi");
+            gen("movq", "0(%rcx)", "%rsi");
+            gen("    call    arrayCheck");
+            pop("%rsi");
+            pop("%rdi");
             // (rcx, rdx, 8) is address of the element!
             gen("movq", "%rax", "8(%rcx,%rdx,8)");
             pop("%rcx");
         } else if (this.methodVariableOffsets.get(this.currentMethod).containsKey(n.i.s)) {
             offset = this.methodVariableOffsets.get(this.currentMethod).get(n.i.s);
             push("%rcx");
-            //this.currentSize += 1;
+            push("%rdi");
+            push("%rsi");
             gen("movq", (-8 - offset) + "(%rbp)", "%rcx"); // gets address of array
+            gen("movq", "%rdx", "%rdi");
+            gen("movq", "0(%rcx)", "%rsi");
+            gen("    call    arrayCheck");
+            pop("%rsi");
+            pop("%rdi");
             // (rcx, rdx, 8) is address of the element!
             gen("movq", "%rax", "8(%rcx,%rdx,8)");
             pop("%rcx");
-            //this.currentSize -= 1;
         } else {
             gen("movq", "%rax", "8(" + this.parameterRegisters.get(this.currentMethod).get(n.i.s) + ",%rdx,8)");
         }
@@ -459,6 +470,13 @@ public class CodeGenerationVisitor implements Visitor {
         push("%rax");
         n.e2.accept(this);
         pop("%rdx"); // rdx = i, rax = addr of array
+        push("%rdi");
+        push("%rsi");
+        gen("movq", "0(%rdx)", "%rdi");
+        gen("movq", "%rax", "%rsi");
+        gen("    call    arrayCheck");
+        pop("%rsi");
+        pop("%rdi");
         gen("movq", "8(%rdx,%rax,8)", "%rax");
     }
 
@@ -541,6 +559,10 @@ public class CodeGenerationVisitor implements Visitor {
             }
         } else {
             gen("movq", this.parameterRegisters.get(this.currentMethod).get(n.s), "%rax");
+            Node node = tv.symbolTable().get(this.currentClass).getMethods().get(this.currentMethod).getParameters().get(n.s);
+            if (node.idType() != null) {
+                this.lastType = node.idType();
+            }
         }
     }
 
@@ -568,7 +590,7 @@ public class CodeGenerationVisitor implements Visitor {
 
     public void visit(NewObject n) {//store this
         push("%rdi");
-        gen("movq", "$" + (8 + this.objectSizes.get(n.i.s)), "%rdi");
+        gen("movq", "$" + (this.objectSizes.get(n.i.s)), "%rdi");
         gen("    call    mjcalloc"); // addr of allocated bytes returned to %rax
         gen("leaq", n.i.s + "$$(%rip)", "%rdx");
         gen("movq", "%rdx", "(%rax)");
