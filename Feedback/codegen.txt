@@ -1,0 +1,17 @@
+CSE 401/501 22au Project IV - Codegen
+
+The output of the program produced by the compiler did not match the output of the program produced by javac on some sample programs (e.g., BinarySearch,TreeVisitor,...). (-2)
+
+The compiler crashes with null pointer exceptions on comparison (if/else) heavy test cases. (-2)
+
+The compiler wrongly raises out of bound access errors for valid programs. (-2)
+
+The compiler doesn’t correctly handle creation of new, empty arrays (e.g., new int[0]). (-2)
+
+Arguments in the assembly code are either getting clobbered, or the assembly code doesn’t properly handle passing the maximum number of arguments. For example, when trying to print an argument with value 345, the program printed a value of 140080160892960. (-2)
+
+Program incorrectly printed class-level variable value when printing a variable set at both the class-level and the method-level. (-2)
+
+Compiler incorrectly wrote non-assembly code (ex:  semantics error statements) into the assembly output file. (-2)
+
+Total: 66/80
